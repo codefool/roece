@@ -143,6 +143,9 @@ bool Empty::can_attack( Square dst ) const {
 void Empty::get_moves( MoveList& moves ) const { 
 }
 
+void Empty::apply_move( const Move& move )
+{}
+
 
 PiecePtr Piece::EMPTY = std::make_shared<Empty>();
 const char *Piece::glyphs=".KWBNRPP";
@@ -162,6 +165,8 @@ void King::get_moves( MoveList& moves ) const {
 bool King::can_attack( Square dst ) const {
     return can_omni_attack(dst);
 }
+void King::apply_move( const Move& move )
+{}
 
 Queen::Queen(Side s, Board* b)
 : Piece(PT_QUEEN, b, s)
@@ -176,6 +181,9 @@ void Queen::get_moves( MoveList& moves ) const {
 bool Queen::can_attack( Square dst ) const {
     return can_omni_attack(dst);
 }
+void Queen::apply_move( const Move& move )
+{}
+
 
 Bishop::Bishop(Side s, Board* b)
 : Piece(PT_BISHOP, b, s)
@@ -190,6 +198,8 @@ void Bishop::get_moves( MoveList& moves ) const {
 bool Bishop::can_attack( Square dst ) const {
     return can_diag_attack(dst);
 }
+void Bishop::apply_move( const Move& move )
+{}
 
 Knight::Knight(Side s, Board* b)
 : Piece(PT_KNIGHT, b, s)
@@ -208,6 +218,10 @@ bool Knight::can_attack( Square dst ) const {
     byte df = square().file_dist(dst);
     return ( dr == 2 && df == 1 ) || ( dr == 1 && df == 2 );
 }
+void Knight::apply_move( const Move& move )
+{}
+
+
 
 Rook::Rook(Side s, Board* b)
 : Piece(PT_ROOK, b, s)
@@ -222,6 +236,10 @@ void Rook::get_moves( MoveList& moves ) const {
 bool Rook::can_attack( Square dst ) const {
     return can_axes_attack(dst);
 }
+void Rook::apply_move( const Move& move )
+{}
+
+
 
 Pawn::Pawn(Side s, Board* b)
 : Piece(PT_PAWN, b, s)
@@ -289,3 +307,6 @@ bool Pawn::can_attack( Square dst ) const {
     }
     return ret;
 }
+
+void Pawn::apply_move( const Move& move )
+{}

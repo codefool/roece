@@ -14,6 +14,7 @@ int main() {
         std::cout << cnt << ' ' << m << std::endl;
         ++cnt;
     }
+    
 
     return 0;
 }

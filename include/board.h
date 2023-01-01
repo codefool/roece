@@ -11,12 +11,12 @@ private:
     short _full_move_cnt;
 
 public:
-    Board();
-    Side get_on_move();
+    Board(bool init = true);
+    Side get_on_move() const;
     void set_on_move(Side s);
     bool none_can_castle() const;
     void clear_castle_rights();
-    bool get_castle_right( byte idx );
+    bool get_castle_right( byte idx ) const;
     void set_castle_right( byte idx, bool state );
     bool has_en_passant() const;
     Square get_en_passant() const;
@@ -30,6 +30,9 @@ public:
     void set_full_move_count( short val );
     void clear_full_move_count();
     void inc_full_move_count();
+
+    Board deep_copy() const;
+    void apply_move(const Move& move );
 
     SeekResult seek( PiecePtr src, Dir dir, short range );
     PiecePtr at(Square squ);

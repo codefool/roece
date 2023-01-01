@@ -40,6 +40,7 @@ public:
     virtual bool promote( PieceType pt );
     virtual void get_moves( MoveList& moves) const = 0;
     virtual bool can_attack( Square dst ) const = 0;
+    virtual void apply_move( const Move& move ) = 0;
     
     PieceList get_attackers(PiecePtr trg);
 
@@ -53,8 +54,8 @@ protected:
     void get_dirs_moves( const DirList& dirs, MoveList& moves ) const;
 
 public:
-    static PiecePtr EMPTY;
     static PiecePtr factory(PieceType pt, Board* b, Side s = SIDE_NONE );
+    static PiecePtr EMPTY;
     static const char *glyphs;
     static const byte ranges[8];
 };
@@ -67,6 +68,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    virtual void apply_move( const Move& move );
 };
 
 class Queen : public Piece {
@@ -77,6 +79,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    virtual void apply_move( const Move& move );
 };
 
 class Bishop : public Piece {
@@ -87,6 +90,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    virtual void apply_move( const Move& move );
 };
 
 class Knight : public Piece {
@@ -97,6 +101,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    virtual void apply_move( const Move& move );
 };
 
 class Rook : public Piece {
@@ -107,6 +112,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    virtual void apply_move( const Move& move );
 };
 
 class Pawn : public Piece {
@@ -117,6 +123,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    virtual void apply_move( const Move& move );
 };
 
 class Empty : public Piece {
@@ -124,5 +131,6 @@ public:
     Empty();
     virtual bool can_attack( Square dst ) const;
     virtual void get_moves( MoveList& moves ) const;
+    virtual void apply_move( const Move& move );
 };
 
