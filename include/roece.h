@@ -21,7 +21,7 @@ enum PieceType {
     PT_PAWN_OFF = 0x07,
 };
 
-enum Side { SIDE_WHITE = 0, SIDE_BLACK, SIDE_NONE };
+enum Color { WHITE = 0, BLACK, NONE };
 
 enum Dir { 
     UP,   DN,   LFT,  RGT,  UPR,  UPL,  DNR,  DNL,

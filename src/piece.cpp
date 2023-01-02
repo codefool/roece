@@ -1,37 +1,37 @@
 #include "roece.h"
 
-Piece::Piece( PieceType pt, Board *b, Side s )
-: _t(pt), _b(b), _s(s)
+Piece::Piece( PieceType pt, Board *b, Color c )
+: _t(pt), _b(b), _c(c)
 {
     set_glyph();
 }
 
       Board&    Piece::board()  const { return *_b; }
 const PieceType Piece::type()   const { return _t; }
-const Side      Piece::side()   const { return _s; }
-const Square    Piece::square() const { return _q; }
+const Color     Piece::color()  const { return _c; }
+const Square    Piece::square() const { return _s; }
 const char      Piece::glyph()  const { return _g; }
 const byte      Piece::range()  const { return ranges[_t]; }
 
 const bool Piece::is_empty()  const { return _t == PT_EMPTY; }
 const bool Piece::is_knight() const { return _t == PT_KNIGHT; }
-const bool Piece::is_white()  const { return _s == SIDE_WHITE; }
-const bool Piece::is_black()  const { return _s == SIDE_BLACK; }
+const bool Piece::is_white()  const { return _c == WHITE; }
+const bool Piece::is_black()  const { return _c == BLACK; }
 
 const bool Piece::is_enemy( PiecePtr ptr ) const {
-    return _s != ptr->side();
+    return color() != ptr->color();
 }
 const bool Piece::is_friend( PiecePtr ptr ) const {
     return ! is_enemy( ptr );
 }
 
 void Piece::set_square(Square squ) {
-    _q = squ;
+    _s = squ;
 }
 
 void Piece::set_glyph() {
     _g = glyphs[type()];
-    if (_s == SIDE_BLACK)
+    if (is_black())
         _g = std::tolower(_g);
 }
 
@@ -75,11 +75,11 @@ PieceList Piece::get_attackers(PiecePtr trg) {
 }
 
 bool Piece::can_diag_attack( Square dst ) const {
-    return _q.rank_dist( dst ) == _q.file_dist( dst );
+    return square().rank_dist( dst ) == square().file_dist( dst );
 }
 
 bool Piece::can_axes_attack( Square dst ) const {
-    return _q.rank_dist( dst ) == 0 || _q.file_dist( dst ) == 0;
+    return square().rank_dist( dst ) == 0 || square().file_dist( dst ) == 0;
 }
 
 bool Piece::can_omni_attack( Square dst ) const {
@@ -103,7 +103,7 @@ void Piece::get_dirs_moves( const DirList& dirs, MoveList& moves ) const {
                 // mark last move as capture
                 ma = MV_CAPTURE;
             }
-            moves.push_back( Move( ma, _q, squ ) );
+            moves.push_back( Move( ma, square(), squ ) );
         }
     }
 }
@@ -121,20 +121,20 @@ void Piece::get_omni_moves(MoveList& moves) const {
     get_axes_moves( moves );
 }
 
-PiecePtr Piece::factory(PieceType pt, Board* b, Side s ) {
+PiecePtr Piece::factory(PieceType pt, Board* b, Color c ) {
     switch(pt) {
-    case PT_KING:   return std::make_shared<King>  (s, b);
-    case PT_QUEEN:  return std::make_shared<Queen> (s, b);
-    case PT_BISHOP: return std::make_shared<Bishop>(s, b);
-    case PT_KNIGHT: return std::make_shared<Knight>(s, b);
-    case PT_ROOK:   return std::make_shared<Rook>  (s, b);
-    case PT_PAWN:   return std::make_shared<Pawn>  (s, b);
+    case PT_KING:   return std::make_shared<King>  (c, b);
+    case PT_QUEEN:  return std::make_shared<Queen> (c, b);
+    case PT_BISHOP: return std::make_shared<Bishop>(c, b);
+    case PT_KNIGHT: return std::make_shared<Knight>(c, b);
+    case PT_ROOK:   return std::make_shared<Rook>  (c, b);
+    case PT_PAWN:   return std::make_shared<Pawn>  (c, b);
     }
     return nullptr;
 }
 
 Empty::Empty()
-: Piece( PT_EMPTY, nullptr, SIDE_NONE )
+: Piece( PT_EMPTY, nullptr, NONE )
 {}
 
 bool Empty::can_attack( Square dst ) const {
@@ -152,8 +152,8 @@ const char *Piece::glyphs=".KWBNRPP";
 // range by PieceType ordinal
 const byte Piece::ranges[8] = {1,1,7,7,1,7,0,0};
 
-King::King(Side s, Board* b)
-: Piece(PT_KING, b, s)
+King::King(Color c, Board* b)
+: Piece(PT_KING, b, c)
 {}
 
 const DirList& King::get_dirs() const {
@@ -161,6 +161,7 @@ const DirList& King::get_dirs() const {
 }
 void King::get_moves( MoveList& moves ) const { 
     get_omni_moves( moves ); 
+    // check castle moves
 }
 bool King::can_attack( Square dst ) const {
     return can_omni_attack(dst);
@@ -168,8 +169,8 @@ bool King::can_attack( Square dst ) const {
 void King::apply_move( const Move& move )
 {}
 
-Queen::Queen(Side s, Board* b)
-: Piece(PT_QUEEN, b, s)
+Queen::Queen(Color c, Board* b)
+: Piece(PT_QUEEN, b, c)
 {}
 
 const DirList& Queen::get_dirs() const {
@@ -185,8 +186,8 @@ void Queen::apply_move( const Move& move )
 {}
 
 
-Bishop::Bishop(Side s, Board* b)
-: Piece(PT_BISHOP, b, s)
+Bishop::Bishop(Color c, Board* b)
+: Piece(PT_BISHOP, b, c)
 {}
 
 const DirList& Bishop::get_dirs() const {
@@ -201,8 +202,8 @@ bool Bishop::can_attack( Square dst ) const {
 void Bishop::apply_move( const Move& move )
 {}
 
-Knight::Knight(Side s, Board* b)
-: Piece(PT_KNIGHT, b, s)
+Knight::Knight(Color c, Board* b)
+: Piece(PT_KNIGHT, b, c)
 {}
 
 const DirList& Knight::get_dirs() const {
@@ -223,8 +224,8 @@ void Knight::apply_move( const Move& move )
 
 
 
-Rook::Rook(Side s, Board* b)
-: Piece(PT_ROOK, b, s)
+Rook::Rook(Color c, Board* b)
+: Piece(PT_ROOK, b, c)
 {}
 
 const DirList& Rook::get_dirs() const {
@@ -241,8 +242,8 @@ void Rook::apply_move( const Move& move )
 
 
 
-Pawn::Pawn(Side s, Board* b)
-: Piece(PT_PAWN, b, s)
+Pawn::Pawn(Color c, Board* b)
+: Piece(PT_PAWN, b, c)
 {}
 
 const DirList& Pawn::get_dirs() const {

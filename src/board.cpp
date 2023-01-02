@@ -36,7 +36,7 @@ Board Board::deep_copy() const
     for ( auto entry : _pm ) {
         const Square squ( entry.first );
         PiecePtr     o_ptr( entry.second );
-        PiecePtr     ptr( Piece::factory( o_ptr->type(), &cpy, o_ptr->side() ));
+        PiecePtr     ptr( Piece::factory( o_ptr->type(), &cpy, o_ptr->color() ));
         ptr->set_square(squ);
         cpy.set( squ, ptr );
     }
@@ -48,12 +48,12 @@ void Board::apply_move(const Move& move) {
     ptr->apply_move(move);
 }
 
-Side Board::get_on_move() const {
+Color Board::get_on_move() const {
     return _on_move;
 }
 
-void Board::set_on_move(Side s) {
-    _on_move = s;
+void Board::set_on_move(Color c) {
+    _on_move = c;
 }
 
 bool Board::none_can_castle() const {
@@ -147,8 +147,8 @@ PiecePtr Board::at(Square squ) {
     return itr->second;
 }
 
-PiecePtr Board::make_piece( PieceType pt, Side s ) {
-    return Piece::factory(pt, this, s);
+PiecePtr Board::make_piece( PieceType pt, Color c ) {
+    return Piece::factory(pt, this, c);
 }
 
 void Board::set( Square squ, PiecePtr ptr ) {
@@ -183,7 +183,7 @@ void Board::from_fen(const std::string& fen)
         if ( std::isalpha(*p) ) {
             // piece type
             PieceType pt;
-            Side      side = (std::islower(*p)?SIDE_BLACK:SIDE_WHITE);
+            Color     color = (std::islower(*p)?BLACK:WHITE);
             switch(std::toupper(*p)) {
                 case 'K': pt = PT_KING;   break;
                 case 'Q': pt = PT_QUEEN;  break;
@@ -192,7 +192,7 @@ void Board::from_fen(const std::string& fen)
                 case 'R': pt = PT_ROOK;   break;
                 case 'P': pt = PT_PAWN;   break;
             }
-            set(Square(rank, file++), Piece::factory( pt, this, side) );
+            set(Square(rank, file++), Piece::factory( pt, this, color) );
         } else if ( std::isdigit(*p) ) {
             // count of empty squares
             file += short( *p - '0' );
@@ -208,7 +208,7 @@ void Board::from_fen(const std::string& fen)
     // Field 2 - Active Color
     // - "w" means that White is to move; "b" means that Black is to move
     //
-    set_on_move(( std::tolower(toks[1].at(0)) == 'b' ) ? SIDE_BLACK : SIDE_WHITE);
+    set_on_move(( std::tolower(toks[1].at(0)) == 'b' ) ? BLACK : WHITE);
 
     // Field 3 - Castling Availability
     // - If neither side has the ability to castle, this field uses the 

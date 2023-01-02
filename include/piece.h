@@ -5,18 +5,18 @@
 class Piece {
 private:
     PieceType _t;
-    Side      _s;
+    Color     _c;
     char      _g;
-    Square    _q;
+    Square    _s;
     Board*    _b;
 
 protected:
-    Piece( PieceType pt, Board *b, Side s = SIDE_NONE );
+    Piece( PieceType pt, Board *b, Color s = NONE );
 
 public:
           Board&    board()  const;
     const PieceType type()   const;
-    const Side      side()   const;
+    const Color     color()  const;
     const Square    square() const;
     const char      glyph()  const;
     const byte      range()  const;
@@ -54,7 +54,7 @@ protected:
     void get_dirs_moves( const DirList& dirs, MoveList& moves ) const;
 
 public:
-    static PiecePtr factory(PieceType pt, Board* b, Side s = SIDE_NONE );
+    static PiecePtr factory(PieceType pt, Board* b, Color s = NONE );
     static PiecePtr EMPTY;
     static const char *glyphs;
     static const byte ranges[8];
@@ -62,7 +62,7 @@ public:
 
 class King : public Piece {
 public:
-    King(Side s, Board* b);
+    King(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
@@ -73,7 +73,7 @@ public:
 
 class Queen : public Piece {
 public:
-    Queen(Side s, Board* b);
+    Queen(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
@@ -84,7 +84,7 @@ public:
 
 class Bishop : public Piece {
 public:
-    Bishop(Side s, Board* b);
+    Bishop(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
@@ -95,7 +95,7 @@ public:
 
 class Knight : public Piece {
 public:
-    Knight(Side s, Board* b);
+    Knight(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
@@ -106,7 +106,7 @@ public:
 
 class Rook : public Piece {
 public:
-    Rook(Side s, Board* b);
+    Rook(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
@@ -117,7 +117,7 @@ public:
 
 class Pawn : public Piece {
 public:
-    Pawn(Side s, Board* b);
+    Pawn(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
