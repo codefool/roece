@@ -11,6 +11,7 @@ private:
     Board*    _b;
 
 protected:
+    Piece();
     Piece( PieceType pt, Board *b, Color s = NONE );
 
 public:
@@ -29,6 +30,8 @@ public:
     const bool is_enemy( PiecePtr ptr ) const;
     const bool is_friend( PiecePtr ptr ) const;
 
+    PiecePtr ptr();
+
     void set_square(Square squ);
 
     void set_glyph();
@@ -36,11 +39,10 @@ public:
     void set_board(Board* brd);
 
     virtual const DirList& get_dirs() const;
-    virtual bool move( Square dst );
+    virtual MoveAction move( const Move move );
     virtual bool promote( PieceType pt );
     virtual void get_moves( MoveList& moves) const = 0;
     virtual bool can_attack( Square dst ) const = 0;
-    virtual void apply_move( const Move& move ) = 0;
     
     PieceList get_attackers(PiecePtr trg);
 
@@ -60,70 +62,71 @@ public:
     static const byte ranges[8];
 };
 
-class King : public Piece {
+class King : public std::enable_shared_from_this<King>, public Piece {
 public:
+    King();
     King(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
-    virtual void apply_move( const Move& move );
+    virtual MoveAction move( const Move move );
 };
 
-class Queen : public Piece {
+class Queen : public std::enable_shared_from_this<Queen>, public Piece {
 public:
+    Queen();
     Queen(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
-    virtual void apply_move( const Move& move );
 };
 
 class Bishop : public Piece {
 public:
+    Bishop();
     Bishop(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
-    virtual void apply_move( const Move& move );
 };
 
 class Knight : public Piece {
 public:
+    Knight();
     Knight(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
-    virtual void apply_move( const Move& move );
 };
 
 class Rook : public Piece {
 public:
+    Rook();
     Rook(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
-    virtual void apply_move( const Move& move );
 };
 
 class Pawn : public Piece {
 public:
+    Pawn();
     Pawn(Color c, Board* b);
 
 public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
-    virtual void apply_move( const Move& move );
 };
 
 class Empty : public Piece {
@@ -131,6 +134,5 @@ public:
     Empty();
     virtual bool can_attack( Square dst ) const;
     virtual void get_moves( MoveList& moves ) const;
-    virtual void apply_move( const Move& move );
 };
 

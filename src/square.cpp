@@ -7,8 +7,9 @@ Square::Square( byte rank, byte file )
 : pair(rank,file)
 {}
 
+// two character square id - file (a-h) rank(1-8), e.g. "a1", "e5", etc
 Square::Square( const char *rnf ) {
-    first  = rnf[1] - '1'; // rank is 1 origin
+    first  = rnf[1] - '1';               // rank is 1 origin
     second = std::tolower(rnf[0]) - 'a';
 }
 

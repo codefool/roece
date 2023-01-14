@@ -1,12 +1,32 @@
+#include <cassert>
 #include "roece.h"
 
+Piece::Piece()
+: _t(PT_NONE), _b(nullptr), _c(NONE), _s(Square::UNBOUNDED)
+{}
+King::King() : Piece()
+{}
+Queen::Queen() : Piece()
+{}
+Bishop::Bishop() : Piece()
+{}
+Knight::Knight() : Piece()
+{}
+Rook::Rook() : Piece()
+{}
+Pawn::Pawn() : Piece()
+{}
+
 Piece::Piece( PieceType pt, Board *b, Color c )
-: _t(pt), _b(b), _c(c)
+: _t(pt), _b(b), _c(c), _s(Square::UNBOUNDED)
 {
     set_glyph();
 }
 
-      Board&    Piece::board()  const { return *_b; }
+Board& Piece::board()  const { 
+    assert(_b != nullptr);
+    return *_b; 
+}
 const PieceType Piece::type()   const { return _t; }
 const Color     Piece::color()  const { return _c; }
 const Square    Piece::square() const { return _s; }
@@ -25,6 +45,10 @@ const bool Piece::is_friend( PiecePtr ptr ) const {
     return ! is_enemy( ptr );
 }
 
+PiecePtr Piece::ptr() {
+    return board().at(square());
+}
+
 void Piece::set_square(Square squ) {
     _s = squ;
 }
@@ -40,7 +64,17 @@ void Piece::set_board(Board* brd) {
 }
 
 const DirList& Piece::get_dirs() const { return none_dirs; }
-bool Piece::move( Square dst ) { return false; }
+
+// move the piece as indicated in the move, and handles any capture.
+// Assumptions:
+// 1. The move is legally valid
+// 2. Any special handling (castling, en passant, etc) have been
+//    taken care of by sub-classes.
+MoveAction Piece::move( const Move move ) {
+    board().set(move.dst, ptr());
+    return move.action; 
+}
+
 bool Piece::promote( PieceType pt ) { return false; }
 
 PieceList Piece::get_attackers(PiecePtr trg) {
@@ -143,13 +177,12 @@ bool Empty::can_attack( Square dst ) const {
 void Empty::get_moves( MoveList& moves ) const { 
 }
 
-void Empty::apply_move( const Move& move )
-{}
-
-
+// the common piece that occupies every empty square.
+// its color is NONE
 PiecePtr Piece::EMPTY = std::make_shared<Empty>();
-const char *Piece::glyphs=".KWBNRPP";
-// range by PieceType ordinal
+
+const char *Piece::glyphs=".KQBNRPP";
+// range by PieceType ordinal  W K Q B N E P P
 const byte Piece::ranges[8] = {1,1,7,7,1,7,0,0};
 
 King::King(Color c, Board* b)
@@ -166,8 +199,21 @@ void King::get_moves( MoveList& moves ) const {
 bool King::can_attack( Square dst ) const {
     return can_omni_attack(dst);
 }
-void King::apply_move( const Move& move )
-{}
+MoveAction King::move(const Move move) {
+    PiecePtr trg = board().at(move.dst);
+    if (move.action == MV_CASTLE_KINGSIDE || move.action == MV_CASTLE_QUEENSIDE ) {
+        // in this case, the src is the king and the trg is the rook being
+        // castled. 
+        File king = (move.action == MV_CASTLE_KINGSIDE) ? Fg : Fb;
+        File rook = (move.action == MV_CASTLE_KINGSIDE) ? Ff : Fc;
+
+        board().set(Square(square().rank(),      king), ptr());
+        board().set(Square(trg->square().rank(), rook), trg);
+
+        return move.action;
+    } 
+    return Piece::move(move);
+}
 
 Queen::Queen(Color c, Board* b)
 : Piece(PT_QUEEN, b, c)
@@ -182,8 +228,6 @@ void Queen::get_moves( MoveList& moves ) const {
 bool Queen::can_attack( Square dst ) const {
     return can_omni_attack(dst);
 }
-void Queen::apply_move( const Move& move )
-{}
 
 
 Bishop::Bishop(Color c, Board* b)
@@ -199,8 +243,6 @@ void Bishop::get_moves( MoveList& moves ) const {
 bool Bishop::can_attack( Square dst ) const {
     return can_diag_attack(dst);
 }
-void Bishop::apply_move( const Move& move )
-{}
 
 Knight::Knight(Color c, Board* b)
 : Piece(PT_KNIGHT, b, c)
@@ -219,9 +261,6 @@ bool Knight::can_attack( Square dst ) const {
     byte df = square().file_dist(dst);
     return ( dr == 2 && df == 1 ) || ( dr == 1 && df == 2 );
 }
-void Knight::apply_move( const Move& move )
-{}
-
 
 
 Rook::Rook(Color c, Board* b)
@@ -237,9 +276,6 @@ void Rook::get_moves( MoveList& moves ) const {
 bool Rook::can_attack( Square dst ) const {
     return can_axes_attack(dst);
 }
-void Rook::apply_move( const Move& move )
-{}
-
 
 
 Pawn::Pawn(Color c, Board* b)
@@ -309,5 +345,3 @@ bool Pawn::can_attack( Square dst ) const {
     return ret;
 }
 
-void Pawn::apply_move( const Move& move )
-{}

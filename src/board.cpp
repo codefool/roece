@@ -43,9 +43,11 @@ Board Board::deep_copy() const
     return cpy;
 }
 
-void Board::apply_move(const Move& move) {
-    PiecePtr ptr( at(move.org));
-    ptr->apply_move(move);
+MoveAction Board::apply_move(const Move& move) {
+    PiecePtr src = at(move.org);
+    if ( src->is_empty() )
+        return MV_NONE;
+    return src->move(move);
 }
 
 Color Board::get_on_move() const {
@@ -152,9 +154,21 @@ PiecePtr Board::make_piece( PieceType pt, Color c ) {
 }
 
 void Board::set( Square squ, PiecePtr ptr ) {
+    // if the target square isn't empty - empty it
+    remove( at(squ) );
+    // erase the src object from the board
+    remove( ptr );
+    // and put it back
     _pm[squ] = ptr;
+    // and record new location in the piece
     ptr->set_square(squ);
 }
+
+void Board::remove(PiecePtr ptr) {
+    if ( !ptr->is_empty() && !ptr->square().is_unbounded() )
+        _pm.erase(ptr->square());
+}
+
 
 // Initialize a board from Forsyth-Edwards (FEN) notation string.
 //
@@ -192,7 +206,8 @@ void Board::from_fen(const std::string& fen)
                 case 'R': pt = PT_ROOK;   break;
                 case 'P': pt = PT_PAWN;   break;
             }
-            set(Square(rank, file++), Piece::factory( pt, this, color) );
+            set( Square(rank, file), Piece::factory( pt, this, color) );
+            ++file;
         } else if ( std::isdigit(*p) ) {
             // count of empty squares
             file += short( *p - '0' );

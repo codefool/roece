@@ -32,12 +32,13 @@ public:
     void inc_full_move_count();
 
     Board deep_copy() const;
-    void apply_move(const Move& move );
+    MoveAction apply_move(const Move& move );
 
     SeekResult seek( PiecePtr src, Dir dir, short range );
     PiecePtr at(Square squ);
     PiecePtr make_piece( PieceType pt, Color s );
     void set( Square squ, PiecePtr ptr );
+    void remove(PiecePtr ptr);
     void from_fen(const std::string& fen);
     std::string diagram();
 

@@ -10,7 +10,7 @@
 
 typedef signed char byte;
 
-enum PieceType {
+enum PieceType : uint8_t {
     PT_EMPTY    = 0x00,
     PT_KING     = 0x01,
     PT_QUEEN    = 0x02,
@@ -19,6 +19,7 @@ enum PieceType {
     PT_ROOK     = 0x05,
     PT_PAWN     = 0x06,
     PT_PAWN_OFF = 0x07,
+    PT_NONE     = 0x80
 };
 
 enum Color { WHITE = 0, BLACK, NONE };
@@ -42,16 +43,13 @@ enum MoveAction : uint8_t {
 	MV_CASTLE_KINGSIDE  = 3,
 	MV_CASTLE_QUEENSIDE = 4,
 	MV_EN_PASSANT       = 5,
-	// MV_UNUSED = 6,
-	// MV_UNUSED = 7,
-	MV_PROM_QUEEN       = 8,
-	MV_PROM_BISHOP      = 9,
-	MV_PROM_KNIGHT      = 10,
-	MV_PROM_ROOK        = 11
-	// UNUSED = 12
-	// UNUSED = 13
-	// UNUSED = 14
-	// UNUSED = 15
+	MV_PROM_QUEEN       = 6,
+	MV_PROM_BISHOP      = 7,
+	MV_PROM_KNIGHT      = 8,
+	MV_PROM_ROOK        = 9,
+    //
+    MV_FAIL_NOT_ON_MOVE,        // moving piece is not on move
+    MV_FAIL_BLOCKED             // move is blocked by friendly piece
 };
 
 // These constants combine to form indexes into Board::_castle_rights
