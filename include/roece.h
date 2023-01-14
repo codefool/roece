@@ -54,6 +54,11 @@ enum MoveAction : uint8_t {
 	// UNUSED = 15
 };
 
+// These constants combine to form indexes into Board::_castle_rights
+// WHITE + KINGSIDE  == 0
+// WHITE + QUEENSIDE == 1
+// BLACK + KINGSIDE  == 2
+// BLACK + QUEENSIDE == 3
 const byte CASTLE_WHITE(0);
 const byte CASTLE_BLACK(2);
 const byte CASTLE_KINGSIDE(0);
@@ -66,6 +71,9 @@ const byte CASTLE_BLACK_QUEENSIDE( CASTLE_BLACK + CASTLE_QUEENSIDE );
 
 enum Rank : byte { R1=0, R2, R3, R4, R5, R6, R7, R8 };
 enum File : byte { Fa=0, Fb, Fc, Fd, Fe, Ff, Fg, Fh };
+
+#define rank_glyph(r) ((char)('1'+r))
+#define file_glyph(f) ((char)('a'+f))
 
 class Piece;
 class Board;

@@ -8,7 +8,7 @@ Square::Square( byte rank, byte file )
 {}
 
 Square::Square( const char *rnf ) {
-    first  = rnf[1] - '1'; // file is 1 origin
+    first  = rnf[1] - '1'; // rank is 1 origin
     second = std::tolower(rnf[0]) - 'a';
 }
 
@@ -57,6 +57,6 @@ Square Square::operator+( const Offset& rhs ) const {
 Square Square::UNBOUNDED(-1,-1);
 
 std::ostream& operator<<(std::ostream& os, const Square& squ) {
-    os << char('a' + squ.file()) << char('1' + squ.rank());
+    os << file_glyph(squ.file()) << rank_glyph(squ.rank());
     return os;
 }

@@ -257,14 +257,14 @@ void Board::from_fen(const std::string& fen)
 std::string Board::diagram() {
     std::stringstream ss;
     for ( short r = R8; r >= R1; --r ) {
-        ss << char('a' + r) << ": ";
+        ss << rank_glyph(r) << ": ";
         for( short f = Fa; f <= Fh; ++f ) {
             PiecePtr pt = at(Square(r,f));
             ss << pt->glyph() << ' ';
         }
         ss << std::endl;
     }
-    ss << "   1 2 3 4 5 6 7 8" << std::endl;
+    ss << "   a b c d e f g h" << std::endl;
     return ss.str();
 }
 
