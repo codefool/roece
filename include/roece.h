@@ -57,15 +57,8 @@ enum MoveAction : uint8_t {
 // WHITE + QUEENSIDE == 1
 // BLACK + KINGSIDE  == 2
 // BLACK + QUEENSIDE == 3
-const byte CASTLE_WHITE(0);
-const byte CASTLE_BLACK(2);
-const byte CASTLE_KINGSIDE(0);
-const byte CASTLE_QUEENSIDE(1);
-
-const byte CASTLE_WHITE_KINGSIDE ( CASTLE_WHITE + CASTLE_KINGSIDE  );
-const byte CASTLE_WHITE_QUEENSIDE( CASTLE_WHITE + CASTLE_QUEENSIDE );
-const byte CASTLE_BLACK_KINGSIDE ( CASTLE_BLACK + CASTLE_KINGSIDE  );
-const byte CASTLE_BLACK_QUEENSIDE( CASTLE_BLACK + CASTLE_QUEENSIDE );
+enum CastleColor : byte { CASTLE_WHITE=0, CASTLE_BLACK=2 };
+enum CastleSide  : byte { CASTLE_KINGSIDE=0, CASTLE_QUEENSIDE=1 };
 
 enum Rank : byte { R1=0, R2, R3, R4, R5, R6, R7, R8 };
 enum File : byte { Fa=0, Fb, Fc, Fd, Fe, Ff, Fg, Fh };

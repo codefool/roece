@@ -17,7 +17,9 @@ public:
     bool none_can_castle() const;
     void clear_castle_rights();
     bool get_castle_right( byte idx ) const;
+    bool get_castle_right( CastleColor c, CastleSide s);
     void set_castle_right( byte idx, bool state );
+    void set_castle_right( CastleColor c, CastleSide s, bool state);
     bool has_en_passant() const;
     Square get_en_passant() const;
     void clear_en_passant();

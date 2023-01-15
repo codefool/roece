@@ -70,8 +70,16 @@ bool Board::get_castle_right( byte idx ) const {
     return _castle_rights[ idx ];
 }
 
+bool Board::get_castle_right( CastleColor c, CastleSide s ) {
+    return get_castle_right( c + s );
+}
+
 void Board::set_castle_right( byte idx, bool state ) {
     _castle_rights[ idx ] = state;
+}
+
+void Board::set_castle_right( CastleColor c, CastleSide s, bool state ) {
+    set_castle_right( c + s, state );
 }
 
 bool Board::has_en_passant() const {

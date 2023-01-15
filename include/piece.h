@@ -127,6 +127,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    MoveAction move(const Move move);
 };
 
 class Empty : public Piece {

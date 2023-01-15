@@ -19,6 +19,5 @@ int main() {
     b.apply_move(x);
     std::cout << b.diagram() << std::endl;
    
-
     return 0;
 }

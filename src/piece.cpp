@@ -202,13 +202,19 @@ bool King::can_attack( Square dst ) const {
 MoveAction King::move(const Move move) {
     PiecePtr trg = board().at(move.dst);
     if (move.action == MV_CASTLE_KINGSIDE || move.action == MV_CASTLE_QUEENSIDE ) {
+        CastleColor cc = (is_black()) ? CASTLE_BLACK : CASTLE_WHITE;
+        CastleSide  cs = (move.action == MV_CASTLE_KINGSIDE) 
+                       ? CASTLE_KINGSIDE 
+                       : CASTLE_QUEENSIDE;
+
         // in this case, the src is the king and the trg is the rook being
         // castled. 
-        File king = (move.action == MV_CASTLE_KINGSIDE) ? Fg : Fb;
-        File rook = (move.action == MV_CASTLE_KINGSIDE) ? Ff : Fc;
+        File king = (cs == CASTLE_KINGSIDE) ? Fg : Fb;
+        File rook = (cs == CASTLE_KINGSIDE) ? Ff : Fc;
 
         board().set(Square(square().rank(),      king), ptr());
         board().set(Square(trg->square().rank(), rook), trg);
+        board().set_castle_right(cc, cs, false);
 
         return move.action;
     } 
@@ -343,5 +349,12 @@ bool Pawn::can_attack( Square dst ) const {
         ret = dr == 1 && df == 1;
     }
     return ret;
+}
+
+MoveAction Pawn::move(const Move move) {
+    if ( move.action == MV_EN_PASSANT ) {
+
+    }
+    return move.action;
 }
 
