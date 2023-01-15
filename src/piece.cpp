@@ -338,7 +338,7 @@ void Pawn::get_moves( MoveList& moves ) const {
 
 bool Pawn::can_attack( Square dst ) const {
     bool ret(false);
-    byte dr( square().rank_dist( dst ) );
+    byte dr( square().rank_delta( dst ) );
     byte df( square().file_dist( dst ) );
     // TODO: if dst == board().en_passant()
     if ( is_white() ) {
@@ -353,7 +353,11 @@ bool Pawn::can_attack( Square dst ) const {
 
 MoveAction Pawn::move(const Move move) {
     if ( move.action == MV_EN_PASSANT ) {
-
+        PiecePtr capt = board().at(move.org.rank(), move.dst.file());
+        if ( capt->is_empty() )
+            return MV_NONE;
+        board().remove(capt);
+        return Piece::move(move);
     }
     // pawn moved. Clear half-move clock
     board().clear_half_move_clock();
