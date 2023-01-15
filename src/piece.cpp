@@ -355,6 +355,8 @@ MoveAction Pawn::move(const Move move) {
     if ( move.action == MV_EN_PASSANT ) {
 
     }
+    // pawn moved. Clear half-move clock
+    board().clear_half_move_clock();
     return move.action;
 }
 

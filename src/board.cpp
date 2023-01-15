@@ -45,9 +45,18 @@ Board Board::deep_copy() const
 
 MoveAction Board::apply_move(const Move& move) {
     PiecePtr src = at(move.org);
+    Square   eps = get_en_passant();
     if ( src->is_empty() )
         return MV_NONE;
-    return src->move(move);
+    MoveAction ret = src->move(move);
+    inc_half_move_clock();
+    if (src->is_black())
+        inc_full_move_count();
+    // clear en passant if en passant was not set this move
+    if ( get_en_passant() == eps )
+        clear_en_passant();
+    toggle_on_move();
+    return ret;
 }
 
 Color Board::get_on_move() const {
@@ -56,6 +65,10 @@ Color Board::get_on_move() const {
 
 void Board::set_on_move(Color c) {
     _on_move = c;
+}
+
+void Board::toggle_on_move() {
+    set_on_move((_on_move == WHITE)?BLACK:WHITE);
 }
 
 bool Board::none_can_castle() const {
@@ -70,7 +83,7 @@ bool Board::get_castle_right( byte idx ) const {
     return _castle_rights[ idx ];
 }
 
-bool Board::get_castle_right( CastleColor c, CastleSide s ) {
+bool Board::get_castle_right( CastleColor c, CastleSide s ) const {
     return get_castle_right( c + s );
 }
 
@@ -150,11 +163,15 @@ SeekResult Board::seek( PiecePtr src, Dir dir, short range ) {
     return ret;
 }
 
-PiecePtr Board::at(Square squ) {
+PiecePtr Board::at(Square squ) const {
     auto itr = _pm.find(squ);
     if ( itr == _pm.end() )
         return Piece::EMPTY;
     return itr->second;
+}
+
+PiecePtr Board::at(byte rank, byte file) const {
+    return at(Square(rank,file));
 }
 
 PiecePtr Board::make_piece( PieceType pt, Color c ) {
@@ -275,6 +292,100 @@ void Board::from_fen(const std::string& fen)
     //   Black's move.
     //
     set_full_move_count( std::stoi(toks[5]) );
+}
+
+std::string Board::fen() const {
+    // Field 1 - Piece Placement Data
+    //
+    // - Each rank is described, starting with rank 8 and ending with rank 1,
+    //   with a "/" between each one; within each rank, the contents of the 
+    //   squares are described in order from the a-file to the h-file.
+    // - Each piece is identified by a single letter taken from the standard
+    //   English names in algebraic notation (pawn = "P", knight = "N",
+    //   bishop = "B", rook = "R", queen = "Q" and king = "K").
+    // - White pieces are designated using uppercase letters ("PNBRQK"), while
+    //   black pieces use lowercase letters ("pnbrqk").
+    // - A set of one or more consecutive empty squares within a rank is denoted
+    //   by a digit from "1" to "8", corresponding to the number of squares.
+    //
+    std::string fen;
+    std::stringstream ss;
+    for ( short rank = R8; rank >= R1; --rank ) {
+        short cnt(0);
+        for ( short file = Fa; file <= Fh; ++file ) {
+            PiecePtr ptr = at(rank,file);
+            if ( ptr->is_empty() ) {
+                cnt++;
+            } else {
+                if ( cnt ) {
+                    ss << cnt;
+                    cnt = 0;
+                }
+                ss << ptr->glyph();
+            }
+        }
+        if ( cnt )
+            ss << cnt;
+        if ( rank > R1 )
+            ss << '/';
+    }
+    ss << ' ';
+
+    // Field 2 - Active Color
+    // - "w" means that White is to move; "b" means that Black is to move
+    //
+    ss << ((get_on_move() == BLACK) ? 'b' : 'w')
+       << ' ';
+
+    // Field 3 - Castling Availability
+    // - If neither side has the ability to castle, this field uses the 
+    //   character "-". 
+    // - Otherwise, this field contains one or more letters: 
+    //   - "K" if White can castle kingside, 
+    //   - "Q" if White can castle queenside, 
+    //   - "k" if Black can castle kingside, and 
+    //   - "q" if Black can castle queenside. 
+    // - A situation that temporarily prevents castling does not prevent
+    //    the use of this notation.
+    //
+    if ( none_can_castle() ) {
+        ss << '-';
+    } else {
+        if ( get_castle_right( CASTLE_WHITE, CASTLE_KINGSIDE )  ) ss << 'K';
+        if ( get_castle_right( CASTLE_WHITE, CASTLE_QUEENSIDE ) ) ss << 'Q';
+        if ( get_castle_right( CASTLE_BLACK, CASTLE_KINGSIDE )  ) ss << 'k';
+        if ( get_castle_right( CASTLE_BLACK, CASTLE_QUEENSIDE ) ) ss << 'q';
+    }
+    ss << ' ' ;
+
+    // Field 4 - En Passant target square
+    // - This is a square over which a pawn has just passed while moving two
+    //   squares; 
+    // - it is given in algebraic notation.
+    // -  If there is no en passant target square, this field uses the character "-".
+    // -  This is recorded regardless of whether there is a pawn in position to
+    //    capture en passant.
+    //
+    if ( has_en_passant() ) {
+        ss << get_en_passant();
+    } else {
+        ss << '-';
+    }
+    ss << ' ';
+
+    // Field 5 - Halfmove Clock
+    // - The number of halfmoves since the last capture or pawn advance, used for 
+    //   the fifty-move rule.
+    //
+    ss << get_half_move_clock() << ' ';
+
+    // Field 6 - Fullmove Count
+    // - The number of the full moves. It starts at 1 and is incremented after
+    //   Black's move.
+    //
+    ss << get_full_move_count();
+
+    return ss.str();
 }
 
 std::string Board::diagram() {

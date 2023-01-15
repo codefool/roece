@@ -14,10 +14,11 @@ public:
     Board(bool init = true);
     Color get_on_move() const;
     void set_on_move(Color s);
+    void toggle_on_move();
     bool none_can_castle() const;
     void clear_castle_rights();
     bool get_castle_right( byte idx ) const;
-    bool get_castle_right( CastleColor c, CastleSide s);
+    bool get_castle_right( CastleColor c, CastleSide s) const;
     void set_castle_right( byte idx, bool state );
     void set_castle_right( CastleColor c, CastleSide s, bool state);
     bool has_en_passant() const;
@@ -37,11 +38,13 @@ public:
     MoveAction apply_move(const Move& move );
 
     SeekResult seek( PiecePtr src, Dir dir, short range );
-    PiecePtr at(Square squ);
+    PiecePtr at(Square squ) const;
+    PiecePtr at(byte rank, byte file) const;
     PiecePtr make_piece( PieceType pt, Color s );
     void set( Square squ, PiecePtr ptr );
     void remove(PiecePtr ptr);
     void from_fen(const std::string& fen);
+    std::string fen() const;
     std::string diagram();
 
     void get_moves(MoveList& moves);

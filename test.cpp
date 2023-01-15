@@ -17,7 +17,7 @@ int main() {
     Move x(MV_CASTLE_KINGSIDE, Square("e1"), Square("h1"));
 
     b.apply_move(x);
-    std::cout << b.diagram() << std::endl;
+    std::cout << b.diagram() << std::endl << b.fen() << std::endl;
    
     return 0;
 }
