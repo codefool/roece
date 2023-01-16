@@ -49,6 +49,10 @@ PiecePtr Piece::ptr() {
     return board().at(square());
 }
 
+void Piece::set_type(PieceType pt) {
+    _t = pt;
+}
+
 void Piece::set_square(Square squ) {
     _s = squ;
 }
@@ -74,8 +78,6 @@ MoveAction Piece::move( const Move move ) {
     board().set(move.dst, ptr());
     return move.action; 
 }
-
-bool Piece::promote( PieceType pt ) { return false; }
 
 PieceList Piece::get_attackers(PiecePtr trg) {
     PieceList enemies;
@@ -293,20 +295,25 @@ const DirList& Pawn::get_dirs() const {
 }
 
 void Pawn::get_moves( MoveList& moves ) const { 
-    Rank   rank((is_black())?R7:R2);
-    Dir    dir ((is_black())?DN:UP);
-    Square org (square());
-    Square dst( org + offs[dir] );
+    Rank     prom((is_black())?R1:R8);
+    Rank     home((is_black())?R7:R2);
+    Dir      dir ((is_black())?DN:UP);
+    Square   org (square());
+    Square   dst( org + offs[dir] );
+    PiecePtr trg;
     if ( dst.in_bounds() ) {
-        PiecePtr ptr( board().at(dst) );
-        if ( ptr->is_empty() )
-        moves.push_back( Move( MV_MOVE, org, dst ) );
-        if ( org.rank() == rank ) {
-            // pawn is still on home file, so can move two places
-            dst += offs[ dir ];
-            PiecePtr ptr( board().at(dst) );
-            if ( ptr->is_empty() )
-                moves.push_back( Move( MV_MOVE, org, dst ) );
+        trg = board().at(dst);
+        if ( trg->is_empty() ) {
+            moves.push_back( Move( MV_MOVE, org, dst ) );
+            if ( org.rank() == home ) {
+                // pawn is still on home rank, so can move two places
+                dst += offs[ dir ];
+                if ( board().at(dst)->is_empty() )
+                    moves.push_back( Move( MV_MOVE, org, dst ) );
+            } else if (dst.rank() == prom ) {
+                for ( short ma = MV_PROM_QUEEN; ma <= MV_PROM_ROOK; ++ma)
+                    moves.push_back( Move( MoveAction(ma), org, dst ) );
+            }
         }
     }
     // check for captures
@@ -315,19 +322,24 @@ void Pawn::get_moves( MoveList& moves ) const {
         Square dst( org + offs[ dir ] );
         if ( !dst.in_bounds() )
             continue;
-        PiecePtr ptr( board().at(dst));
-        if ( ptr->is_empty() )
+        trg = board().at(dst);
+        if ( trg->is_empty() || is_friend(trg) )
             continue;
-        moves.push_back( Move( MV_CAPTURE, org, dst ) );
+        if ( dst.rank() == prom ) {
+            for ( uint8_t ma = MV_CAP_PROM_QUEEN; ma <= MV_CAP_PROM_ROOK; ++ma )
+                moves.push_back( Move( MoveAction(ma), org, dst ) );
+        } else {
+            moves.push_back( Move( MV_CAPTURE, org, dst ) );
+        }
     }
 
     // check for en passant
     if ( board().has_en_passant() ) {
-        Square   dst( board().get_en_passant() );
-        PiecePtr trg( board().at(dst) );
+        dst = board().get_en_passant();
+        trg = board().at(dst);
         if ( is_enemy(trg) ) {
-            Rank     rank( (is_black()) ? R4 : R5 );
-            Dir      dir ( (is_black()) ? DN : UP );
+            Rank rank( (is_black()) ? R4 : R5 );
+            Dir  dir ( (is_black()) ? DN : UP );
             if ( org.rank() == rank && org.file_dist(dst) == 1 ) {
                 dst += offs[ dir ];
                 moves.push_back( Move( MV_EN_PASSANT, org, dst ) );
@@ -358,6 +370,23 @@ MoveAction Pawn::move(const Move move) {
             return MV_NONE;
         board().remove(capt);
         return Piece::move(move);
+    } else if ( move.action == MV_MOVE ) {
+        // standard move - but pawn can move 1 or 2 spaces.
+        // if 2 spaces set en passant square
+        Piece::move(move);
+        if ( move.org.rank_dist(move.dst) == 2 )
+            board().set_en_passant(move.dst);
+    } else {
+        Piece::move(move);
+        PieceType pt(PT_NONE);
+        switch(move.action) {
+	    case MV_PROM_QUEEN : case MV_CAP_PROM_QUEEN : pt = PT_QUEEN;  break;
+	    case MV_PROM_BISHOP: case MV_CAP_PROM_BISHOP: pt = PT_BISHOP; break;
+	    case MV_PROM_KNIGHT: case MV_CAP_PROM_KNIGHT: pt = PT_KNIGHT; break;
+	    case MV_PROM_ROOK  : case MV_CAP_PROM_ROOK  : pt = PT_ROOK;   break;
+        }
+        if ( pt != PT_NONE )
+            set_type(pt);
     }
     // pawn moved. Clear half-move clock
     board().clear_half_move_clock();

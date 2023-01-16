@@ -194,7 +194,6 @@ void Board::remove(PiecePtr ptr) {
         _pm.erase(ptr->square());
 }
 
-
 // Initialize a board from Forsyth-Edwards (FEN) notation string.
 //
 // 

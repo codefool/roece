@@ -37,16 +37,20 @@ enum SeekResultCode {
 };
 
 enum MoveAction : uint8_t {
-	MV_NONE             = 0,
-	MV_MOVE             = 1,
-	MV_CAPTURE          = 2,
-	MV_CASTLE_KINGSIDE  = 3,
-	MV_CASTLE_QUEENSIDE = 4,
-	MV_EN_PASSANT       = 5,
-	MV_PROM_QUEEN       = 6,
-	MV_PROM_BISHOP      = 7,
-	MV_PROM_KNIGHT      = 8,
-	MV_PROM_ROOK        = 9,
+	MV_NONE             = 0x00,
+	MV_MOVE             = 0x01,
+	MV_CAPTURE          = 0x02,
+	MV_CASTLE_KINGSIDE  = 0x03,
+	MV_CASTLE_QUEENSIDE = 0x04,
+	MV_EN_PASSANT       = 0x05,
+	MV_PROM_QUEEN       = 0x06,
+	MV_PROM_BISHOP      = 0x07,
+	MV_PROM_KNIGHT      = 0x08,
+	MV_PROM_ROOK        = 0x09,
+	MV_CAP_PROM_QUEEN   = 0x0a,
+	MV_CAP_PROM_BISHOP  = 0x0b,
+	MV_CAP_PROM_KNIGHT  = 0x0c,
+	MV_CAP_PROM_ROOK    = 0x0d,
     //
     MV_FAIL_NOT_ON_MOVE,        // moving piece is not on move
     MV_FAIL_BLOCKED             // move is blocked by friendly piece

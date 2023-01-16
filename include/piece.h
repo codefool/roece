@@ -32,15 +32,13 @@ public:
 
     PiecePtr ptr();
 
+    void set_type(PieceType pt);
     void set_square(Square squ);
-
     void set_glyph();
-
     void set_board(Board* brd);
 
     virtual const DirList& get_dirs() const;
     virtual MoveAction move( const Move move );
-    virtual bool promote( PieceType pt );
     virtual void get_moves( MoveList& moves) const = 0;
     virtual bool can_attack( Square dst ) const = 0;
     
