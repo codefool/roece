@@ -28,10 +28,13 @@ $(LIB_NAME) : $(OBJ)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HDR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+build-ver:
+	sed -ri 's/(.*)(ver_build = )([0-9]*);/echo "\1\2$$((\3+1));"/ge' $(INC_DIR)/buildinfo.h
+
 clean:
 	-rm $(OBJ_DIR)/*.o $(LIB_NAME)
 
-.PHONY:
+.PHONY: build-ver
 
-test: test.cpp $(LIB_NAME)
+test: test.cpp build-ver $(LIB_NAME)
 	$(CC) $(CFLAGS) test.cpp -I. -L/usr/lib/x86_64-linux-gnu $(LIB_NAME) -o test

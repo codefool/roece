@@ -13,8 +13,8 @@ public:
 
     const short rank_delta( const Square& rhs ) const;
     const short file_delta( const Square& rhs ) const;
-    const short rank_dist( const Square& rhs )  const;
-    const short file_dist( const Square& rhs )  const;
+    const short rank_distance( const Square& rhs )  const;
+    const short file_distance( const Square& rhs )  const;
 
     Offset delta( const Square& rhs ) const;
 

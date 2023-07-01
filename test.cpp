@@ -1,6 +1,7 @@
 #include "roece.h"
 
 int main() {
+    std::cout << bi << std::endl;
     Board b(false);
     b.from_fen("1nrN4/2P5/8/8/4Pp2/8/2p5/1NRn4 w - e4 0 1");
     std::cout << b.diagram() << std::endl;

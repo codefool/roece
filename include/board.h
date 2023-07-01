@@ -47,6 +47,8 @@ public:
     std::string fen() const;
     std::string diagram();
 
+    EvaluationResult evaluate();
+
     void get_moves(MoveList& moves);
 
 private:

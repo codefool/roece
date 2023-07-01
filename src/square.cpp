@@ -25,11 +25,11 @@ const short Square::file_delta( const Square& rhs ) const {
     return file() - rhs.file();
 }
 
-const short Square::rank_dist( const Square& rhs ) const {
+const short Square::rank_distance( const Square& rhs ) const {
     return std::abs( rank_delta( rhs ) );
 }
 
-const short Square::file_dist( const Square& rhs ) const {
+const short Square::file_distance( const Square& rhs ) const {
     return std::abs( file_delta( rhs ) );
 }
 

@@ -409,3 +409,18 @@ void Board::get_moves(MoveList& moves) {
 }
 
 const char *Board::initial_position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+
+EvaluationResult Board::evaluate() {
+    EvaluationResult result;
+
+
+
+
+
+
+
+
+
+    return result;
+}

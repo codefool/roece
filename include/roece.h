@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "buildinfo.h"
+
 typedef signed char byte;
 
 enum PieceType : uint8_t {
@@ -117,4 +119,15 @@ struct Move {
     friend std::ostream& operator<<(std::ostream& os, const Move& move);
 };
 
+struct MovePosition {
+    Move move;
+    // Position pos;
+};
+
+typedef std::vector<MovePosition> MovePositionList;
+
+struct EvaluationResult {
+    //Position origin;
+    MovePositionList mp;
+};
 

@@ -23,10 +23,11 @@ Piece::Piece( PieceType pt, Board *b, Color c )
     set_glyph();
 }
 
-Board& Piece::board()  const { 
+Board& Piece::board() const { 
     assert(_b != nullptr);
     return *_b; 
 }
+
 const PieceType Piece::type()   const { return _t; }
 const Color     Piece::color()  const { return _c; }
 const Square    Piece::square() const { return _s; }
@@ -111,11 +112,11 @@ PieceList Piece::get_attackers(PiecePtr trg) {
 }
 
 bool Piece::can_diag_attack( Square dst ) const {
-    return square().rank_dist( dst ) == square().file_dist( dst );
+    return square().rank_distance( dst ) == square().file_distance( dst );
 }
 
 bool Piece::can_axes_attack( Square dst ) const {
-    return square().rank_dist( dst ) == 0 || square().file_dist( dst ) == 0;
+    return square().rank_distance( dst ) == 0 || square().file_distance( dst ) == 0;
 }
 
 bool Piece::can_omni_attack( Square dst ) const {
@@ -265,8 +266,8 @@ void Knight::get_moves( MoveList& moves ) const {
 }
 
 bool Knight::can_attack( Square dst ) const {
-    byte dr = square().rank_dist(dst);
-    byte df = square().file_dist(dst);
+    byte dr = square().rank_distance(dst);
+    byte df = square().file_distance(dst);
     return ( dr == 2 && df == 1 ) || ( dr == 1 && df == 2 );
 }
 
@@ -295,15 +296,15 @@ const DirList& Pawn::get_dirs() const {
 }
 
 void Pawn::get_moves( MoveList& moves ) const { 
-    Rank     prom((is_black())?R1:R8);
-    Rank     home((is_black())?R7:R2);
-    Dir      dir ((is_black())?DN:UP);
+    Rank     prom( is_black() ? R1 : R8 );  // rank where pawn is promoted
+    Rank     home( is_black() ? R7 : R2 );  // rank where pawn starts
+    Dir      dir ( is_black() ? DN : UP );  // pawns can only up forward (unless capturing)
     Square   org (square());
     Square   dst( org + offs[dir] );
     PiecePtr trg;
+
     if ( dst.in_bounds() ) {
-        trg = board().at(dst);
-        if ( trg->is_empty() ) {
+        if ( board().at(dst)->is_empty() ) {
             moves.push_back( Move( MV_MOVE, org, dst ) );
             if ( org.rank() == home ) {
                 // pawn is still on home rank, so can move two places
@@ -311,11 +312,13 @@ void Pawn::get_moves( MoveList& moves ) const {
                 if ( board().at(dst)->is_empty() )
                     moves.push_back( Move( MV_MOVE, org, dst ) );
             } else if (dst.rank() == prom ) {
+                // pawn is being promoted - push a move for each possible type
                 for ( short ma = MV_PROM_QUEEN; ma <= MV_PROM_ROOK; ++ma)
                     moves.push_back( Move( MoveAction(ma), org, dst ) );
             }
         }
     }
+
     // check for captures
     const DirList& dirs( (is_black()) ? pawn_black : pawn_white );
     for ( Dir dir : dirs ) {
@@ -326,6 +329,7 @@ void Pawn::get_moves( MoveList& moves ) const {
         if ( trg->is_empty() || is_friend(trg) )
             continue;
         if ( dst.rank() == prom ) {
+            // the capture advances pawn to promotion rank
             for ( uint8_t ma = MV_CAP_PROM_QUEEN; ma <= MV_CAP_PROM_ROOK; ++ma )
                 moves.push_back( Move( MoveAction(ma), org, dst ) );
         } else {
@@ -336,11 +340,9 @@ void Pawn::get_moves( MoveList& moves ) const {
     // check for en passant
     if ( board().has_en_passant() ) {
         dst = board().get_en_passant();
-        trg = board().at(dst);
-        if ( is_enemy(trg) ) {
-            Rank rank( (is_black()) ? R4 : R5 );
-            Dir  dir ( (is_black()) ? DN : UP );
-            if ( org.rank() == rank && org.file_dist(dst) == 1 ) {
+        if ( is_enemy( board().at( dst ) ) ) {
+            Rank rank( is_black() ? R4 : R5 );
+            if ( org.rank() == rank && org.file_distance(dst) == 1 ) {
                 dst += offs[ dir ];
                 moves.push_back( Move( MV_EN_PASSANT, org, dst ) );
             }
@@ -351,7 +353,7 @@ void Pawn::get_moves( MoveList& moves ) const {
 bool Pawn::can_attack( Square dst ) const {
     bool ret(false);
     byte dr( square().rank_delta( dst ) );
-    byte df( square().file_dist( dst ) );
+    byte df( square().file_distance( dst ) );
     // TODO: if dst == board().en_passant()
     if ( is_white() ) {
         // white pawn attack up, so dr must be -1 and df is -/+1
@@ -374,7 +376,7 @@ MoveAction Pawn::move(const Move move) {
         // standard move - but pawn can move 1 or 2 spaces.
         // if 2 spaces set en passant square
         Piece::move(move);
-        if ( move.org.rank_dist(move.dst) == 2 )
+        if ( move.org.rank_distance(move.dst) == 2 )
             board().set_en_passant(move.dst);
     } else {
         Piece::move(move);
