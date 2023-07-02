@@ -1,5 +1,6 @@
 #pragma once
 #include "roece.h"
+#include "position.h"
 
 class Board {
 private:
@@ -11,7 +12,9 @@ private:
     short  _full_move_cnt;
 
 public:
-    Board(bool init = true);
+    Board();
+    Board(std::string fen);
+    Board(PositionPacked& pp);
     Color get_on_move() const;
     void set_on_move(Color s);
     void toggle_on_move();
@@ -46,6 +49,9 @@ public:
     void from_fen(const std::string& fen);
     std::string fen() const;
     std::string diagram();
+
+    PositionPacked pack() const;
+    Board unpack(PositionPacked& pp);
 
     EvaluationResult evaluate();
 

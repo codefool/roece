@@ -21,6 +21,7 @@ public:
     const Square    square() const;
     const char      glyph()  const;
     const byte      range()  const;
+    const uint8_t   toByte() const;
 
     const bool is_empty()  const;
     const bool is_knight() const;

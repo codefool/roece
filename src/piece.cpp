@@ -33,6 +33,13 @@ const Color     Piece::color()  const { return _c; }
 const Square    Piece::square() const { return _s; }
 const char      Piece::glyph()  const { return _g; }
 const byte      Piece::range()  const { return ranges[_t]; }
+const uint8_t   Piece::toByte() const {
+	uint8_t r = static_cast<uint8_t>(_t);
+	if (_c == BLACK)
+		r |= BLACK_MASK;
+	return r;
+}
+
 
 const bool Piece::is_empty()  const { return _t == PT_EMPTY; }
 const bool Piece::is_knight() const { return _t == PT_KNIGHT; }

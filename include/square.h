@@ -5,6 +5,7 @@ class Square : public std::pair<byte,byte> {
 public:
     Square();
     Square( byte rank, byte file );
+    Square( uint8_t ord);
     Square( const char *rnf );
     Square( const std::string rnf );
 
@@ -25,6 +26,8 @@ public:
     Square operator+( const Offset& rhs ) const;
 
     friend std::ostream& operator<<(std::ostream& os, const Square& squ);
+
+    uint64_t ordinal() const;    
 
 public:
     static Square UNBOUNDED;

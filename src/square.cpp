@@ -7,6 +7,10 @@ Square::Square( byte rank, byte file )
 : pair(rank,file)
 {}
 
+Square::Square( uint8_t ord) 
+: pair(ord / 8, ord % 8)
+{}
+
 // two character square id - file (a-h) rank(1-8), e.g. "a1", "e5", etc
 Square::Square( const char *rnf ) {
     first  = rnf[1] - '1';               // rank is 1 origin
@@ -55,9 +59,14 @@ Square Square::operator+( const Offset& rhs ) const {
     return Square( first + rhs.first, second + rhs.second );
 }
 
-Square Square::UNBOUNDED(-1,-1);
+Square Square::UNBOUNDED(-1, -1);
 
 std::ostream& operator<<(std::ostream& os, const Square& squ) {
     os << file_glyph(squ.file()) << rank_glyph(squ.rank());
     return os;
 }
+
+uint64_t Square::ordinal() const {
+    return (uint64_t)(rank() * 8 + file());
+}
+

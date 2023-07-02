@@ -1,4 +1,5 @@
 #include "roece.h"
+#include "util.h"
 
 std::vector<std::string> split(std::string target, std::string delimiter) {
     std::vector<std::string> v;
@@ -19,14 +20,21 @@ std::vector<std::string> split(std::string target, std::string delimiter) {
     return v;
 }
 
-Board::Board(bool init) {
-    if ( init )
-        from_fen(initial_position_fen);
+Board::Board() {}
+
+Board::Board(std::string fen) {
+    if ( fen.length() == 0 )
+        fen = initial_position_fen;
+    from_fen(fen);
+}
+
+Board::Board(PositionPacked& pp) {
+    unpack(pp);
 }
 
 Board Board::deep_copy() const
 {
-    Board cpy(false);
+    Board cpy;
     cpy.set_on_move( get_on_move() );
     cpy.set_en_passant( get_en_passant() );
     cpy.set_half_move_clock( get_half_move_clock() );
@@ -108,7 +116,7 @@ void Board::clear_en_passant() {
 }
 
 void Board::set_en_passant( Square squ ) {
-    _en_passant = squ;
+    _en_passant = squ.file();
 }
 
 short Board::get_half_move_clock() const {
@@ -271,14 +279,17 @@ void Board::from_fen(const std::string& fen)
     }
 
     // Field 4 - En Passant target square
-    // - This is a square over which a pawn has just passed while moving two
-    //   squares; 
+    // - This is a square over which a pawn has just passed while advancing two
+    //   squares on it's first move
     // - it is given in algebraic notation.
-    // -  If there is no en passant target square, this field uses the character "-".
-    // -  This is recorded regardless of whether there is a pawn in position to
-    //    capture en passant.
+    // - If there is no en passant target square, this field uses the character "-".
+    // - This is recorded regardless of whether there is a pawn in position to
+    //   exercise en passant.
     //
-    set_en_passant( ( toks[3] == "-" ) ?Square::UNBOUNDED : Square(toks[3]) );
+    if ( toks[3] == "-" )
+        clear_en_passant();
+    else
+        set_en_passant(Square(toks[3]));
 
     // Field 5 - Halfmove Clock
     // - The number of halfmoves since the last capture or pawn advance, used for 
@@ -389,6 +400,7 @@ std::string Board::fen() const {
 
 std::string Board::diagram() {
     std::stringstream ss;
+    ss << "   a b c d e f g h" << std::endl;
     for ( short r = R8; r >= R1; --r ) {
         ss << rank_glyph(r) << ": ";
         for( short f = Fa; f <= Fh; ++f ) {
@@ -397,7 +409,6 @@ std::string Board::diagram() {
         }
         ss << std::endl;
     }
-    ss << "   a b c d e f g h" << std::endl;
     return ss.str();
 }
 
@@ -410,17 +421,84 @@ void Board::get_moves(MoveList& moves) {
 
 const char *Board::initial_position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+#define NO_EN_PASSANT 0x7f
+
+PositionPacked Board::pack() const {
+    PositionPacked ret;
+    ret.gi.f.castle_right_white_kingside  = (get_castle_right(CASTLE_WHITE, CASTLE_KINGSIDE))?1:0;
+    ret.gi.f.castle_right_white_queenside = (get_castle_right(CASTLE_WHITE, CASTLE_QUEENSIDE))?1:0;
+    ret.gi.f.castle_right_black_kingside  = (get_castle_right(CASTLE_BLACK, CASTLE_KINGSIDE))?1:0;
+    ret.gi.f.castle_right_black_queenside = (get_castle_right(CASTLE_BLACK, CASTLE_QUEENSIDE))?1:0;
+    ret.gi.f.on_move = _on_move;
+    ret.gi.f.piece_cnt = _pm.size();
+    ret.gi.f.half_move_clock = get_half_move_clock();
+    ret.gi.f.full_move_cnt = get_full_move_count();
+    ret.gi.f.en_passant_ord = has_en_passant()
+                            ? get_en_passant().ordinal()
+                            : NO_EN_PASSANT;
+
+    uint64_t   pop{0};
+    uint32_t   bitcnt{0};
+    uint8_t    map[32];
+    uint64_t   buff[2];
+    uint8_t    bit{0};
+    std::map<uint8_t,uint8_t> mapp;
+
+    for ( auto piece : _pm ) {
+        uint8_t ord = 63 - piece.first.ordinal();
+        pop |= (uint64_t)(1ULL << ord);
+        mapp[ord] = piece.second->toByte();
+    }
+
+    // 
+    for ( auto itr = mapp.rbegin(); itr != mapp.rend(); ++itr ) {
+        map[bitcnt++] = itr->second;
+    }
+
+    ret.pop = pop;
+    pack_array(map, (uint8_t*)buff, bitcnt);
+    ret.hi = buff[0];
+    ret.lo = buff[1];
+
+    return ret;
+}
+
+Board Board::unpack(PositionPacked& pp) {
+    Board ret;
+
+    uint64_t pop{pp.pop};
+    uint8_t  map[32];
+    uint64_t buff[2] = {pp.hi, pp.lo};
+    std::memset(map, 0x00, sizeof(map));
+    unpack_array((uint8_t*)buff, map, 32);
+    uint8_t *pmap = map;
+    for(uint8_t ord{0}; pop; ++ord, pop >>= 1) {
+        if ( pop & 1 ) {
+            uint8_t   pb = *pmap++;
+            PieceType pt = static_cast<PieceType>( pb & PIECE_MASK);
+            Color     c  = static_cast<Color>    ((pb & SIDE_MASK) != 0);
+            ret._pm[Square(ord)] = Piece::factory(pt, &ret, c);
+        }
+    }
+
+    ret.set_castle_right(CASTLE_WHITE, CASTLE_KINGSIDE, pp.gi.f.castle_right_white_kingside);
+    ret.set_castle_right(CASTLE_WHITE, CASTLE_QUEENSIDE, pp.gi.f.castle_right_white_queenside);
+    ret.set_castle_right(CASTLE_BLACK, CASTLE_KINGSIDE, pp.gi.f.castle_right_black_kingside);
+    ret.set_castle_right(CASTLE_BLACK, CASTLE_QUEENSIDE, pp.gi.f.castle_right_black_queenside);
+    ret.set_on_move(pp.gi.f.on_move?BLACK:WHITE);
+    if ( pp.gi.f.en_passant_ord != NO_EN_PASSANT )
+        ret.set_en_passant(Square(pp.gi.f.en_passant_ord));
+    else
+        ret.clear_en_passant();
+    ret.set_half_move_clock(pp.gi.f.half_move_clock);
+    ret.set_full_move_count(pp.gi.f.full_move_cnt);
+
+    return ret;
+}
+
 
 EvaluationResult Board::evaluate() {
     EvaluationResult result;
-
-
-
-
-
-
-
-
 
     return result;
 }

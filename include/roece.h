@@ -25,6 +25,9 @@ enum PieceType : uint8_t {
 };
 
 enum Color { WHITE = 0, BLACK, NONE };
+#define SIDE_MASK  0x08
+#define BLACK_MASK 0x08
+#define PIECE_MASK 0x07
 
 enum Dir { 
     UP,   DN,   LFT,  RGT,  UPR,  UPL,  DNR,  DNL,
@@ -105,8 +108,6 @@ struct SeekResult {
 };
 
 #include "square.h"
-#include "board.h"
-#include "piece.h"
 
 struct Move {
     MoveAction action;
@@ -130,4 +131,7 @@ struct EvaluationResult {
     //Position origin;
     MovePositionList mp;
 };
+
+#include "board.h"
+#include "piece.h"
 
