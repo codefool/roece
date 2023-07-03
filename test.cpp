@@ -10,24 +10,13 @@ int main() {
     PieceList a = p->get_attackers(p);
     MoveList ml;
     b.get_moves(ml);
-
-    short cnt(1);
-    for( Move m : ml ) {
-        std::cout << cnt << ' ' << m << std::endl;
-        ++cnt;
+    for ( auto mv : ml ) {
+        Board c(b);
+        c.apply_move(mv);
+        std::cout << c.fen() << std::endl << c.diagram() << std::endl << mv << std::endl;
     }
-    Move x(MV_EN_PASSANT, Square("f4"), Square("e3"));
-    
-    PositionPacked pp = b.pack();
 
-    Board c = b.unpack(pp);
+    std::cout << b.diagram() << std::endl << b.fen() << std::endl;
 
-    b.apply_move(x);
-    std::cout << b.diagram() << std::endl << b.fen() << std::endl
-              << pp << std::endl;
-
-    std::cout << c.diagram() << std::endl << c.fen() << std::endl
-              << c.pack() << std::endl;
-   
     return 0;
 }

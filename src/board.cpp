@@ -32,23 +32,20 @@ Board::Board(PositionPacked& pp) {
     unpack(pp);
 }
 
-Board Board::deep_copy() const
-{
-    Board cpy;
-    cpy.set_on_move( get_on_move() );
-    cpy.set_en_passant( get_en_passant() );
-    cpy.set_half_move_clock( get_half_move_clock() );
-    cpy.set_full_move_count( get_full_move_count() );
+Board::Board(const Board& other) {
+    set_on_move( other.get_on_move() );
+    set_en_passant( other.get_en_passant() );
+    set_half_move_clock( other.get_half_move_clock() );
+    set_full_move_count( other.get_full_move_count() );
     for ( short idx(0); idx < 4; ++idx ) 
-        cpy.set_castle_right( idx, get_castle_right(idx) );
-    for ( auto entry : _pm ) {
+        set_castle_right( idx, other.get_castle_right(idx) );
+    for ( auto entry : other._pm ) {
         const Square squ( entry.first );
         PiecePtr     o_ptr( entry.second );
-        PiecePtr     ptr( Piece::factory( o_ptr->type(), &cpy, o_ptr->color() ));
+        PiecePtr     ptr( Piece::factory( o_ptr->type(), this, o_ptr->color() ));
         ptr->set_square(squ);
-        cpy.set( squ, ptr );
+        set( squ, ptr );
     }
-    return cpy;
 }
 
 MoveAction Board::apply_move(const Move& move) {

@@ -15,6 +15,7 @@ public:
     Board();
     Board(std::string fen);
     Board(PositionPacked& pp);
+    Board(const Board& other);
     Color get_on_move() const;
     void set_on_move(Color s);
     void toggle_on_move();
