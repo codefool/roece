@@ -1,5 +1,8 @@
 #include "util.h"
 
+const char *EMPTY_BOARD = nullptr;
+const char *INITIAL_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 // in is an octet array of len s
 // out is an octet array of len s/2
 // pack every two entries into one entry

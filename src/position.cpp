@@ -23,16 +23,16 @@ bool GameInfoPacked::operator<(const GameInfoPacked& o) const {
     return ret;
 }
 
-PositionPacked::PositionPacked()
-: gi{0}, pop(0), lo(0), hi(0)
+PositionPacked::PositionPacked() 
+: gi(0), pop{0}, hi{0}, lo{0}
 {}
 
 PositionPacked::PositionPacked(const PositionPacked& o)
-: gi{o.gi}, pop(o.pop), lo(o.lo), hi(o.hi)
+: gi(o.gi), pop{o.pop}, hi{o.hi}, lo{o.lo}
 {}
 
 PositionPacked::PositionPacked(uint32_t g, uint64_t p, uint64_t h, uint64_t l)
-: gi{g}, pop(p), lo(l), hi(h)
+: gi(g), pop{p}, hi{h}, lo{l}
 {}
 
 bool PositionPacked::operator==(const PositionPacked& o) const {

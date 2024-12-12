@@ -1,35 +1,18 @@
 #include "roece.h"
 #include "util.h"
 
-std::vector<std::string> split(std::string target, std::string delimiter) {
-    std::vector<std::string> v;
+std::vector<std::string> split(std::string target, std::string delimiter);
 
-    if (!target.empty()) {
-        std::string::size_type start = 0;
-        while(true) {
-            size_t x = target.find(delimiter, start);
-            if (x == std::string::npos)
-                break;
-
-            v.push_back(target.substr(start, x-start));
-            start = x + delimiter.size();
-        }
-
-        v.push_back(target.substr(start));
+Board::Board(const char *fen) {
+    if ( fen != EMPTY_BOARD ) {
+        if ( strlen(fen) == 0 )
+            fen = INITIAL_POSITION;
+        from_fen(fen);
     }
-    return v;
-}
-
-Board::Board() {}
-
-Board::Board(std::string fen) {
-    if ( fen.length() == 0 )
-        fen = initial_position_fen;
-    from_fen(fen);
 }
 
 Board::Board(PositionPacked& pp) {
-    unpack(pp);
+    unpack(pp,*this);
 }
 
 Board::Board(const Board& other) {
@@ -77,27 +60,51 @@ void Board::toggle_on_move() {
 }
 
 bool Board::none_can_castle() const {
-    return !_castle_rights[0] && !_castle_rights[1] && !_castle_rights[2] && !_castle_rights[3];
+    return !_castle_rights;
 }
 
 void Board::clear_castle_rights() {
-    std::memset(_castle_rights, 0x00, sizeof(_castle_rights));
+    _castle_rights = 0;
 }
 
-bool Board::get_castle_right( byte idx ) const {
-    return _castle_rights[ idx ];
+bool Board::get_castle_right( byte bit ) const {
+    return (_castle_rights & bit) != 0;
 }
 
-bool Board::get_castle_right( CastleColor c, CastleSide s ) const {
-    return get_castle_right( c + s );
+// convert color and side attributes to an ordinal bit position
+//        white  black
+// king    0001   0010   2^0 2^1 s^2 2^3
+// queen   0100   1000
+// 
+// color : white=0, black=1
+// side  : king=0, black=0
+//
+// ((color < 1) + side) gives the series {0,1,2,3}
+// and 1 << ((color < 1) + side) gives series (1,2,4,8)
+//
+byte Board::castle_bit(Color c, CastleSide s ) const {
+    // return (c == CASTLE_WHITE) 
+    //        ? (s == CASTLE_KINGSIDE)
+    //          ? CASTLE_RIGHT_WHITE_KINGSIDE : CASTLE_RIGHT_WHITE_QUEENSIDE
+    //        : (s == CASTLE_KINGSIDE)
+    //          ? CASTLE_RIGHT_BLACK_KINGSIDE : CASTLE_RIGHT_BLACK_QUEENSIDE;
+    return 1 << ((c << 1) + s);
 }
 
-void Board::set_castle_right( byte idx, bool state ) {
-    _castle_rights[ idx ] = state;
+bool Board::get_castle_right( Color c, CastleSide s ) const {
+    return get_castle_right( castle_bit(c, s) );
 }
 
-void Board::set_castle_right( CastleColor c, CastleSide s, bool state ) {
-    set_castle_right( c + s, state );
+void Board::set_castle_right( byte bit, bool state ) {
+    if (state) {
+        _castle_rights |= bit;
+    } else {
+        _castle_rights &= ~bit;
+    }
+}
+
+void Board::set_castle_right( Color c, CastleSide s, bool state ) {
+    set_castle_right( castle_bit(c, s), state );
 }
 
 bool Board::has_en_passant() const {
@@ -201,6 +208,14 @@ void Board::remove(PiecePtr ptr) {
 
 // Initialize a board from Forsyth-Edwards (FEN) notation string.
 //
+// FEN of the starting position:
+// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+// 
+// Starts with a8, and proceeds left-to-right to h1.
+// - Ranks are separated with '/'
+// - Lower-case letters denote black pieces, upper-case white pieces
+// - A number [1-8] denotes a count of consecutive blank squares
+// - 
 // 
 void Board::from_fen(const std::string& fen)
 {
@@ -269,16 +284,16 @@ void Board::from_fen(const std::string& fen)
     if ( toks[2] != "-" ) {
         for( const char *p = toks[2].c_str(); *p; ++p )
         {
-            byte color = (std::isupper(*p))        ? CASTLE_WHITE    : CASTLE_BLACK;
-            byte side  = ('K' == std::toupper(*p)) ? CASTLE_KINGSIDE : CASTLE_QUEENSIDE;
-            set_castle_right( color + side, true );
+            Color      color = (std::isupper(*p))        ? WHITE    : BLACK;
+            CastleSide side  = ('K' == std::toupper(*p)) ? KINGSIDE : QUEENSIDE;
+            set_castle_right( color, side, true );
         }
     }
 
     // Field 4 - En Passant target square
     // - This is a square over which a pawn has just passed while advancing two
     //   squares on it's first move
-    // - it is given in algebraic notation.
+    // - it is given in algebraic notation (a1-h8)
     // - If there is no en passant target square, this field uses the character "-".
     // - This is recorded regardless of whether there is a pawn in position to
     //   exercise en passant.
@@ -339,9 +354,9 @@ std::string Board::fen() const {
     ss << ' ';
 
     // Field 2 - Active Color
-    // - "w" means that White is to move; "b" means that Black is to move
+    // - "w" means that White is on move; "b" means that Black is on move
     //
-    ss << ((get_on_move() == BLACK) ? 'b' : 'w')
+    ss << "bw"[get_on_move() == BLACK]
        << ' ';
 
     // Field 3 - Castling Availability
@@ -358,10 +373,10 @@ std::string Board::fen() const {
     if ( none_can_castle() ) {
         ss << '-';
     } else {
-        if ( get_castle_right( CASTLE_WHITE, CASTLE_KINGSIDE )  ) ss << 'K';
-        if ( get_castle_right( CASTLE_WHITE, CASTLE_QUEENSIDE ) ) ss << 'Q';
-        if ( get_castle_right( CASTLE_BLACK, CASTLE_KINGSIDE )  ) ss << 'k';
-        if ( get_castle_right( CASTLE_BLACK, CASTLE_QUEENSIDE ) ) ss << 'q';
+        if ( get_castle_right( WHITE, KINGSIDE  ) ) ss << 'K';
+        if ( get_castle_right( WHITE, QUEENSIDE ) ) ss << 'Q';
+        if ( get_castle_right( BLACK, KINGSIDE  ) ) ss << 'k';
+        if ( get_castle_right( BLACK, QUEENSIDE ) ) ss << 'q';
     }
     ss << ' ' ;
 
@@ -416,16 +431,14 @@ void Board::get_moves(MoveList& moves) {
     }
 }
 
-const char *Board::initial_position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
 #define NO_EN_PASSANT 0x7f
 
 PositionPacked Board::pack() const {
     PositionPacked ret;
-    ret.gi.f.castle_right_white_kingside  = (get_castle_right(CASTLE_WHITE, CASTLE_KINGSIDE))?1:0;
-    ret.gi.f.castle_right_white_queenside = (get_castle_right(CASTLE_WHITE, CASTLE_QUEENSIDE))?1:0;
-    ret.gi.f.castle_right_black_kingside  = (get_castle_right(CASTLE_BLACK, CASTLE_KINGSIDE))?1:0;
-    ret.gi.f.castle_right_black_queenside = (get_castle_right(CASTLE_BLACK, CASTLE_QUEENSIDE))?1:0;
+    ret.gi.f.castle_right_white_kingside  = get_castle_right(WHITE, KINGSIDE ) ? 1 : 0;
+    ret.gi.f.castle_right_white_queenside = get_castle_right(WHITE, QUEENSIDE) ? 1 : 0;
+    ret.gi.f.castle_right_black_kingside  = get_castle_right(BLACK, KINGSIDE ) ? 1 : 0;
+    ret.gi.f.castle_right_black_queenside = get_castle_right(BLACK, QUEENSIDE) ? 1 : 0;
     ret.gi.f.on_move = _on_move;
     ret.gi.f.piece_cnt = _pm.size();
     ret.gi.f.half_move_clock = get_half_move_clock();
@@ -460,8 +473,12 @@ PositionPacked Board::pack() const {
     return ret;
 }
 
-Board Board::unpack(PositionPacked& pp) {
-    Board ret;
+void Board::init(PositionPacked& pp) {
+    unpack(pp,*this);
+}
+
+void Board::unpack(PositionPacked& pp, Board& ret) {
+    ret._pm.clear();
 
     uint64_t pop{pp.pop};
     uint8_t  map[32];
@@ -474,23 +491,26 @@ Board Board::unpack(PositionPacked& pp) {
             uint8_t   pb = *pmap++;
             PieceType pt = static_cast<PieceType>( pb & PIECE_MASK);
             Color     c  = static_cast<Color>    ((pb & SIDE_MASK) != 0);
-            ret._pm[Square(ord)] = Piece::factory(pt, &ret, c);
+            PiecePtr  ptr= Piece::factory(pt, &ret, c);
+            Square    org(ord);
+            ret._pm[org] = ptr;
+            ptr->set_square(org);
         }
     }
 
-    ret.set_castle_right(CASTLE_WHITE, CASTLE_KINGSIDE, pp.gi.f.castle_right_white_kingside);
-    ret.set_castle_right(CASTLE_WHITE, CASTLE_QUEENSIDE, pp.gi.f.castle_right_white_queenside);
-    ret.set_castle_right(CASTLE_BLACK, CASTLE_KINGSIDE, pp.gi.f.castle_right_black_kingside);
-    ret.set_castle_right(CASTLE_BLACK, CASTLE_QUEENSIDE, pp.gi.f.castle_right_black_queenside);
+    ret.set_castle_right(WHITE, KINGSIDE,  pp.gi.f.castle_right_white_kingside );
+    ret.set_castle_right(WHITE, QUEENSIDE, pp.gi.f.castle_right_white_queenside);
+    ret.set_castle_right(BLACK, KINGSIDE,  pp.gi.f.castle_right_black_kingside );
+    ret.set_castle_right(BLACK, QUEENSIDE, pp.gi.f.castle_right_black_queenside);
     ret.set_on_move(pp.gi.f.on_move?BLACK:WHITE);
+
     if ( pp.gi.f.en_passant_ord != NO_EN_PASSANT )
         ret.set_en_passant(Square(pp.gi.f.en_passant_ord));
     else
         ret.clear_en_passant();
+
     ret.set_half_move_clock(pp.gi.f.half_move_clock);
     ret.set_full_move_count(pp.gi.f.full_move_cnt);
-
-    return ret;
 }
 
 
@@ -498,4 +518,23 @@ EvaluationResult Board::evaluate() {
     EvaluationResult result;
 
     return result;
+}
+
+std::vector<std::string> split(std::string target, std::string delimiter) {
+    std::vector<std::string> v;
+
+    if (!target.empty()) {
+        std::string::size_type start = 0;
+        while(true) {
+            size_t x = target.find(delimiter, start);
+            if (x == std::string::npos)
+                break;
+
+            v.push_back(target.substr(start, x-start));
+            start = x + delimiter.size();
+        }
+
+        v.push_back(target.substr(start));
+    }
+    return v;
 }

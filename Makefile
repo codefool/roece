@@ -8,7 +8,7 @@ SRC_DIR := ./src
 OBJ_DIR := ./obj
 LIB_DIR := ./lib
 LIB_NAME := $(LIB_DIR)/libroece
-LIB_INC := /usr/local/libcf/lib
+LIB_INC := /usr/local/libcf/lib/libcf
 
 SRC := $(wildcard $(SRC_DIR)/*.cpp)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
@@ -34,7 +34,10 @@ build-ver:
 clean:
 	-rm $(OBJ_DIR)/*.o $(LIB_NAME)
 
+clean-test:
+	rm -rf /tmp/ttemp/ /tmp/positions/ /tmp/roots/ /tmp/domain/
+
 .PHONY: build-ver
 
 test: test.cpp build-ver $(LIB_NAME)
-	$(CC) $(CFLAGS) test.cpp -I. -L/usr/lib/x86_64-linux-gnu $(LIB_NAME) -o test
+	$(CC) $(CFLAGS) test.cpp -I. -L/usr/lib/x86_64-linux-gnu $(LIB_INC) $(LIB_NAME) -o test

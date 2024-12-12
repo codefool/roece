@@ -2,13 +2,6 @@
 #include <cstdint>
 #include <ostream>
 
-enum CastleRight:uint8_t {
-    CASTLE_RIGHT_WHITE_KINGSIDE  = 0x01,
-    CASTLE_RIGHT_WHITE_QUEENSIDE = 0x02,
-    CASTLE_RIGHT_BLACK_KINGSIDE  = 0x04,
-    CASTLE_RIGHT_BLACK_QUEENSIDE = 0x08
-};
-
 union GameInfoPacked {
     uint32_t i;
     struct {

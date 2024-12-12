@@ -6,25 +6,26 @@ class Board {
 private:
     std::map<Square, PiecePtr> _pm;
     Color  _on_move;
-    bool   _castle_rights[4];
+    byte   _castle_rights;
     Square _en_passant;
     short  _half_move_clock;
     short  _full_move_cnt;
 
 public:
-    Board();
-    Board(std::string fen);
+    Board(const char *fen = EMPTY_BOARD);
     Board(PositionPacked& pp);
     Board(const Board& other);
+    void init(PositionPacked& pp);
     Color get_on_move() const;
     void set_on_move(Color s);
     void toggle_on_move();
     bool none_can_castle() const;
     void clear_castle_rights();
-    bool get_castle_right( byte idx ) const;
-    bool get_castle_right( CastleColor c, CastleSide s) const;
-    void set_castle_right( byte idx, bool state );
-    void set_castle_right( CastleColor c, CastleSide s, bool state);
+    byte castle_bit(Color c, CastleSide s ) const;
+    bool get_castle_right( byte bit ) const;
+    bool get_castle_right( Color c, CastleSide s) const;
+    void set_castle_right( byte bit, bool state );
+    void set_castle_right( Color c, CastleSide s, bool state);
     bool has_en_passant() const;
     Square get_en_passant() const;
     void clear_en_passant();
@@ -52,12 +53,9 @@ public:
     std::string diagram();
 
     PositionPacked pack() const;
-    Board unpack(PositionPacked& pp);
+    void unpack(PositionPacked& pp, Board& ret);
 
     EvaluationResult evaluate();
 
     void get_moves(MoveList& moves);
-
-private:
-    static const char *initial_position_fen;    
 };

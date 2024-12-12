@@ -1,9 +1,32 @@
 #include "roece.h"
 
+// These move actions produce a new root position. In general,
+// these are actions that are a pawn move and/or piece capture.
+bool Move::resultsInRootPosition(MoveAction ma) {
+    switch(ma) {
+        // pawn moves
+        case MV_MOVE_PAWN:
+        case MV_EN_PASSANT:
+        case MV_PROM_QUEEN:
+        case MV_PROM_BISHOP:
+        case MV_PROM_KNIGHT:
+        case MV_PROM_ROOK:
+        // piece captures
+        case MV_CAPTURE:
+        case MV_CAP_PROM_QUEEN:
+        case MV_CAP_PROM_BISHOP:
+        case MV_CAP_PROM_KNIGHT:
+        case MV_CAP_PROM_ROOK:
+            return true;
+    }
+    return false;
+}
+
 std::ostream& operator<<(std::ostream& os, const Move& mv) {
     switch (mv.action) {
         case MV_NONE            : os << "MV_NONE";             break;
         case MV_MOVE            : os << "MV_MOVE";             break;
+        case MV_MOVE_PAWN       : os << "MV_MOVE_PAWN";        break;
         case MV_CAPTURE         : os << "MV_CAPTURE";          break;
         case MV_CASTLE_KINGSIDE : os << "MV_CASTLE_KINGSIDE";  break;
         case MV_CASTLE_QUEENSIDE: os << "MV_CASTLE_QUEENSIDE"; break;

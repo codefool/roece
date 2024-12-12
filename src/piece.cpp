@@ -133,11 +133,12 @@ bool Piece::can_omni_attack( Square dst ) const {
 void Piece::get_dirs_moves( const DirList& dirs, MoveList& moves ) const {
     SeekResult res;
     PiecePtr ptr = board().at( square() );
+    bool isPawn = ptr->type() == PT_PAWN;
     for ( Dir dir : dirs ) {
         res = board().seek( ptr, dir, range() );
         short sz( res.path.size() );
         for ( short idx(0); idx < sz; ++idx ) {
-            MoveAction ma  = MV_MOVE;
+            MoveAction ma  = (isPawn) ? MV_MOVE_PAWN : MV_MOVE;
             Square     squ = res.path[idx];
             if ( idx == sz - 1 && res.occupant != nullptr && !res.occupant->is_empty() ) {
                 // the last square of the walk is not empty,
@@ -212,15 +213,15 @@ bool King::can_attack( Square dst ) const {
 MoveAction King::move(const Move move) {
     PiecePtr trg = board().at(move.dst);
     if (move.action == MV_CASTLE_KINGSIDE || move.action == MV_CASTLE_QUEENSIDE ) {
-        CastleColor cc = (is_black()) ? CASTLE_BLACK : CASTLE_WHITE;
-        CastleSide  cs = (move.action == MV_CASTLE_KINGSIDE) 
-                       ? CASTLE_KINGSIDE 
-                       : CASTLE_QUEENSIDE;
+        Color      cc = (is_black()) ? BLACK : WHITE;
+        CastleSide cs = (move.action == MV_CASTLE_KINGSIDE) 
+                       ? KINGSIDE 
+                       : QUEENSIDE;
 
         // in this case, the src is the king and the trg is the rook being
         // castled. 
-        File king = (cs == CASTLE_KINGSIDE) ? Fg : Fb;
-        File rook = (cs == CASTLE_KINGSIDE) ? Ff : Fc;
+        File king = (cs == KINGSIDE) ? Fg : Fb;
+        File rook = (cs == KINGSIDE) ? Ff : Fc;
 
         board().set(Square(square().rank(),      king), ptr());
         board().set(Square(trg->square().rank(), rook), trg);
@@ -306,18 +307,18 @@ void Pawn::get_moves( MoveList& moves ) const {
     Rank     prom( is_black() ? R1 : R8 );  // rank where pawn is promoted
     Rank     home( is_black() ? R7 : R2 );  // rank where pawn starts
     Dir      dir ( is_black() ? DN : UP );  // pawns can only up forward (unless capturing)
-    Square   org (square());
-    Square   dst( org + offs[dir] );
+    Square   org ( square() );
+    Square   dst ( org + offs[dir] );
     PiecePtr trg;
 
     if ( dst.in_bounds() ) {
         if ( board().at(dst)->is_empty() ) {
-            moves.push_back( Move( MV_MOVE, org, dst ) );
+            moves.push_back( Move( MV_MOVE_PAWN, org, dst ) );
             if ( org.rank() == home ) {
                 // pawn is still on home rank, so can move two places
                 dst += offs[ dir ];
                 if ( board().at(dst)->is_empty() )
-                    moves.push_back( Move( MV_MOVE, org, dst ) );
+                    moves.push_back( Move( MV_MOVE_PAWN, org, dst ) );
             } else if (dst.rank() == prom ) {
                 // pawn is being promoted - push a move for each possible type
                 for ( short ma = MV_PROM_QUEEN; ma <= MV_PROM_ROOK; ++ma)
@@ -379,7 +380,7 @@ MoveAction Pawn::move(const Move move) {
             return MV_NONE;
         board().remove(capt);
         return Piece::move(move);
-    } else if ( move.action == MV_MOVE ) {
+    } else if ( move.action == MV_MOVE_PAWN ) {
         // standard move - but pawn can move 1 or 2 spaces.
         // if 2 spaces set en passant square
         Piece::move(move);

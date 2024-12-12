@@ -10,6 +10,9 @@
 
 #include "buildinfo.h"
 
+extern const char *EMPTY_BOARD;
+extern const char *INITIAL_POSITION;
+
 typedef signed char byte;
 
 enum PieceType : uint8_t {
@@ -24,7 +27,6 @@ enum PieceType : uint8_t {
     PT_NONE     = 0x80
 };
 
-enum Color { WHITE = 0, BLACK, NONE };
 #define SIDE_MASK  0x08
 #define BLACK_MASK 0x08
 #define PIECE_MASK 0x07
@@ -42,32 +44,40 @@ enum SeekResultCode {
 };
 
 enum MoveAction : uint8_t {
-	MV_NONE             = 0x00,
-	MV_MOVE             = 0x01,
-	MV_CAPTURE          = 0x02,
-	MV_CASTLE_KINGSIDE  = 0x03,
-	MV_CASTLE_QUEENSIDE = 0x04,
-	MV_EN_PASSANT       = 0x05,
-	MV_PROM_QUEEN       = 0x06,
-	MV_PROM_BISHOP      = 0x07,
-	MV_PROM_KNIGHT      = 0x08,
-	MV_PROM_ROOK        = 0x09,
-	MV_CAP_PROM_QUEEN   = 0x0a,
-	MV_CAP_PROM_BISHOP  = 0x0b,
-	MV_CAP_PROM_KNIGHT  = 0x0c,
-	MV_CAP_PROM_ROOK    = 0x0d,
+	MV_NONE             = 0x00,     // 0000 no legal move exists
+	MV_MOVE             = 0x01,     // 0001 a legal move
+    MV_MOVE_PAWN        = 0x02,     // 0010 a pawn legal move
+	MV_CAPTURE          = 0x03,     // 0011 move results in capture
+	MV_CASTLE_KINGSIDE  = 0x04,     // 0100 move is castle kingside
+	MV_CASTLE_QUEENSIDE = 0x05,     // 0101 move is castle queenside
+	MV_EN_PASSANT       = 0x06,     // 0110 move is pawn capture en passant 
+	MV_PROM_QUEEN       = 0x07,     // 0111 move is pawn promotion to queen
+	MV_PROM_BISHOP      = 0x08,     // 1000 move ""     ""    ""      bishop
+	MV_PROM_KNIGHT      = 0x09,     // 1001 move ""     ""    ""      knight
+	MV_PROM_ROOK        = 0x0a,     // 1010 move ""     ""    ""      rook
+	MV_CAP_PROM_QUEEN   = 0x0b,     // 1011 promotion after capture to queen
+	MV_CAP_PROM_BISHOP  = 0x0c,     // 1100 promotion ""    ""      "" bishop
+	MV_CAP_PROM_KNIGHT  = 0x0d,     // 1101 promotion ""    ""      "" knight
+	MV_CAP_PROM_ROOK    = 0x0e,     // 1110 promotion ""    ""      "" rook
     //
     MV_FAIL_NOT_ON_MOVE,        // moving piece is not on move
     MV_FAIL_BLOCKED             // move is blocked by friendly piece
 };
 
-// These constants combine to form indexes into Board::_castle_rights
-// WHITE + KINGSIDE  == 0
-// WHITE + QUEENSIDE == 1
-// BLACK + KINGSIDE  == 2
-// BLACK + QUEENSIDE == 3
-enum CastleColor : byte { CASTLE_WHITE=0, CASTLE_BLACK=2 };
-enum CastleSide  : byte { CASTLE_KINGSIDE=0, CASTLE_QUEENSIDE=1 };
+// Castle Rights 
+// Does a side have the right (not necessarily the ability) to castle 
+// on the king or queen side. A right to one side is lost if the rook
+// on that side moves (8A3b). Both rights are lost for a side if its 
+// king moves (8A3a).
+enum CastleRight:uint8_t {
+    CASTLE_RIGHT_WHITE_KINGSIDE  = 0x01,
+    CASTLE_RIGHT_WHITE_QUEENSIDE = 0x02,
+    CASTLE_RIGHT_BLACK_KINGSIDE  = 0x04,
+    CASTLE_RIGHT_BLACK_QUEENSIDE = 0x08
+};
+
+enum Color       : byte { WHITE = 0,    BLACK, NONE };
+enum CastleSide  : byte { KINGSIDE = 0, QUEENSIDE   };
 
 enum Rank : byte { R1=0, R2, R3, R4, R5, R6, R7, R8 };
 enum File : byte { Fa=0, Fb, Fc, Fd, Fe, Ff, Fg, Fh };
@@ -117,6 +127,7 @@ struct Move {
     Move(MoveAction ma, Square o, Square d)
     : action(ma), org(o), dst(d)
     {}
+    bool resultsInRootPosition(MoveAction ma);
     friend std::ostream& operator<<(std::ostream& os, const Move& move);
 };
 
