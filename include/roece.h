@@ -60,8 +60,8 @@ enum MoveAction : uint8_t {
 	MV_CAP_PROM_KNIGHT  = 0x0d,     // 1101 promotion ""    ""      "" knight
 	MV_CAP_PROM_ROOK    = 0x0e,     // 1110 promotion ""    ""      "" rook
     //
-    MV_FAIL_NOT_ON_MOVE,        // moving piece is not on move
-    MV_FAIL_BLOCKED             // move is blocked by friendly piece
+    MV_FAIL_NOT_ON_MOVE,            // moving piece is not on move
+    MV_FAIL_BLOCKED                 // move is blocked by friendly piece
 };
 
 // Castle Rights 

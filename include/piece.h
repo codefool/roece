@@ -45,6 +45,8 @@ public:
     
     PieceList get_attackers(PiecePtr trg);
 
+    friend std::ostream& operator<<(std::ostream& os, const Piece& p);
+
 protected:
     bool can_diag_attack( Square dst ) const;
     bool can_axes_attack( Square dst ) const;

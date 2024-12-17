@@ -3,13 +3,14 @@
 #include "position.h"
 
 class Board {
-private:
+public:
     std::map<Square, PiecePtr> _pm;
-    Color  _on_move;
-    byte   _castle_rights;
-    Square _en_passant;
-    short  _half_move_clock;
-    short  _full_move_cnt;
+private:
+    Color                      _on_move;
+    byte                       _castle_rights;
+    Square                     _en_passant;
+    short                      _half_move_clock;
+    short                      _full_move_cnt;
 
 public:
     Board(const char *fen = EMPTY_BOARD);
@@ -26,6 +27,7 @@ public:
     bool get_castle_right( Color c, CastleSide s) const;
     void set_castle_right( byte bit, bool state );
     void set_castle_right( Color c, CastleSide s, bool state);
+    byte get_all_castle_rights() const { return _castle_rights; }
     bool has_en_passant() const;
     Square get_en_passant() const;
     void clear_en_passant();
@@ -54,6 +56,7 @@ public:
 
     PositionPacked pack() const;
     void unpack(PositionPacked& pp, Board& ret);
+    std::uint64_t zobristHash() const;
 
     EvaluationResult evaluate();
 

@@ -77,7 +77,7 @@ bool Board::get_castle_right( byte bit ) const {
 // queen   0100   1000
 // 
 // color : white=0, black=1
-// side  : king=0, black=0
+// side  : king=0, queen=1
 //
 // ((color < 1) + side) gives the series {0,1,2,3}
 // and 1 << ((color < 1) + side) gives series (1,2,4,8)
@@ -435,17 +435,17 @@ void Board::get_moves(MoveList& moves) {
 
 PositionPacked Board::pack() const {
     PositionPacked ret;
-    ret.gi.f.castle_right_white_kingside  = get_castle_right(WHITE, KINGSIDE ) ? 1 : 0;
-    ret.gi.f.castle_right_white_queenside = get_castle_right(WHITE, QUEENSIDE) ? 1 : 0;
-    ret.gi.f.castle_right_black_kingside  = get_castle_right(BLACK, KINGSIDE ) ? 1 : 0;
-    ret.gi.f.castle_right_black_queenside = get_castle_right(BLACK, QUEENSIDE) ? 1 : 0;
-    ret.gi.f.on_move = _on_move;
-    ret.gi.f.piece_cnt = _pm.size();
+    ret.gi.f.castle_right_white_kingside  = get_castle_right(WHITE, KINGSIDE );
+    ret.gi.f.castle_right_white_queenside = get_castle_right(WHITE, QUEENSIDE);
+    ret.gi.f.castle_right_black_kingside  = get_castle_right(BLACK, KINGSIDE );
+    ret.gi.f.castle_right_black_queenside = get_castle_right(BLACK, QUEENSIDE);
+    ret.gi.f.on_move         = _on_move;
+    ret.gi.f.piece_cnt       = _pm.size();
     ret.gi.f.half_move_clock = get_half_move_clock();
-    ret.gi.f.full_move_cnt = get_full_move_count();
-    ret.gi.f.en_passant_ord = has_en_passant()
-                            ? get_en_passant().ordinal()
-                            : NO_EN_PASSANT;
+    ret.gi.f.full_move_cnt   = get_full_move_count();
+    ret.gi.f.en_passant_ord  = has_en_passant()
+                             ? get_en_passant().ordinal()
+                             : NO_EN_PASSANT;
 
     uint64_t   pop{0};
     uint32_t   bitcnt{0};

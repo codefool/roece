@@ -35,21 +35,19 @@ const char      Piece::glyph()  const { return _g; }
 const byte      Piece::range()  const { return ranges[_t]; }
 const uint8_t   Piece::toByte() const {
 	uint8_t r = static_cast<uint8_t>(_t);
-	if (_c == BLACK)
+	if (_c)
 		r |= BLACK_MASK;
 	return r;
 }
-
-
 const bool Piece::is_empty()  const { return _t == PT_EMPTY; }
 const bool Piece::is_knight() const { return _t == PT_KNIGHT; }
-const bool Piece::is_white()  const { return _c == WHITE; }
-const bool Piece::is_black()  const { return _c == BLACK; }
+const bool Piece::is_white()  const { return !_c; }
+const bool Piece::is_black()  const { return  _c; }
 
-const bool Piece::is_enemy( PiecePtr ptr ) const {
+inline const bool Piece::is_enemy( PiecePtr ptr ) const {
     return color() != ptr->color();
 }
-const bool Piece::is_friend( PiecePtr ptr ) const {
+inline const bool Piece::is_friend( PiecePtr ptr ) const {
     return ! is_enemy( ptr );
 }
 
@@ -74,6 +72,12 @@ void Piece::set_glyph() {
 void Piece::set_board(Board* brd) {
     _b = brd;
 }
+
+std::ostream& operator<<(std::ostream& os, const Piece& p) {
+    os << p.glyph();
+    return os;
+}
+
 
 const DirList& Piece::get_dirs() const { return none_dirs; }
 
@@ -193,7 +197,9 @@ void Empty::get_moves( MoveList& moves ) const {
 PiecePtr Piece::EMPTY = std::make_shared<Empty>();
 
 const char *Piece::glyphs=".KQBNRPP";
-// range by PieceType ordinal  W K Q B N E P P
+// range by PieceType ordinal
+// This is the max number of squares a piece can move
+//                             W K Q B N R P P
 const byte Piece::ranges[8] = {1,1,7,7,1,7,0,0};
 
 King::King(Color c, Board* b)
@@ -213,7 +219,7 @@ bool King::can_attack( Square dst ) const {
 MoveAction King::move(const Move move) {
     PiecePtr trg = board().at(move.dst);
     if (move.action == MV_CASTLE_KINGSIDE || move.action == MV_CASTLE_QUEENSIDE ) {
-        Color      cc = (is_black()) ? BLACK : WHITE;
+        Color      cc = (Color)is_black(); //WHITE=0,BLACK=1
         CastleSide cs = (move.action == MV_CASTLE_KINGSIDE) 
                        ? KINGSIDE 
                        : QUEENSIDE;

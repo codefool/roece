@@ -2,10 +2,11 @@
 #include <cstdint>
 #include <ostream>
 
+#pragma pack(1)
 union GameInfoPacked {
     uint32_t i;
     struct {
-        uint32_t unused                      : 1;
+        uint32_t unused                       : 1;
         // en passant
         // If set, the pawn that rests on file en_passant_file moved two
         // positions. This signals that a pawn subject to en passant capture
@@ -35,9 +36,12 @@ union GameInfoPacked {
     bool operator<(const GameInfoPacked& o) const;
 };
 
+// PositionPacked
+//
+// 
 struct PositionPacked
 {
-    GameInfoPacked gi;
+    GameInfoPacked gi;    // 32-bits
     uint64_t       pop;   // population bitmap
     uint64_t       lo;    // lo 64-bits population info
     uint64_t       hi;    // hi 64-bits population info
@@ -45,8 +49,16 @@ struct PositionPacked
     PositionPacked();
     PositionPacked(const PositionPacked& o);
     PositionPacked(uint32_t g, uint64_t p, uint64_t h, uint64_t l);
+    std::string hexString() const;
     bool operator==(const PositionPacked& o) const;
     bool operator!=(const PositionPacked& o) const;
     bool operator<(const PositionPacked& o) const;
     friend std::ostream& operator<<(std::ostream& os, const PositionPacked& pp);
 };
+
+struct CrossReference {
+   
+    PositionPacked p;
+};
+
+#pragma pack()

@@ -35,6 +35,19 @@ PositionPacked::PositionPacked(uint32_t g, uint64_t p, uint64_t h, uint64_t l)
 : gi(g), pop{p}, hi{h}, lo{l}
 {}
 
+std::string PositionPacked::hexString() const {
+    int len((sizeof(PositionPacked)*2)+1);
+    char b[len];
+    char *p(b);
+    const unsigned char *q((const unsigned char *)this);
+    for ( int i = 0; i < sizeof(PositionPacked); ++i, p += 2, ++q ) {
+        std::sprintf(p,"%02x", *q);
+    }
+    *p = '\0';
+    return std::string(b);
+}
+
+
 bool PositionPacked::operator==(const PositionPacked& o) const {
     return pop == o.pop && gi == o.gi && hi == o.hi && lo == o.lo;
 }
