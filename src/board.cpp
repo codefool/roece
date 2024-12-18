@@ -447,29 +447,28 @@ PositionPacked Board::pack() const {
                              ? get_en_passant().ordinal()
                              : NO_EN_PASSANT;
 
-    uint64_t   pop{0};
-    uint32_t   bitcnt{0};
-    uint8_t    map[32];
-    uint64_t   buff[2];
-    uint8_t    bit{0};
-    std::map<uint8_t,uint8_t> mapp;
-
-    for ( auto piece : _pm ) {
-        uint8_t ord = 63 - piece.first.ordinal();
-        pop |= (uint64_t)(1ULL << ord);
-        mapp[ord] = piece.second->toByte();
-    }
-
+    // the Board piece map is keyed by ordinal [0..63], and being
+    // and ordered collection guaranteed to be in order from 0,0 (a1)
+    // to 7,7 (h8.)
     // 
-    for ( auto itr = mapp.rbegin(); itr != mapp.rend(); ++itr ) {
-        map[bitcnt++] = itr->second;
+    // Pack the population as a 64-bit map depicting which squares
+    // [0..63] contain pieces, hashed by ordinal number. Hence, a0 (0)
+    // is the MSB, and h8 (63) is the LSB.
+    //
+    uint8_t  cnt{0};    
+    uint64_t pop{0};
+    for ( auto piece : _pm ) {
+        uint8_t ord = 63 - piece.first.ordinal(); // 63..0
+        pop |= (uint64_t)(1ULL << ord);
+        uint8_t pt  = piece.second->toByte();
+        int idx{cnt/2};
+        if ( cnt & 1 )  // odd
+            ret.pieces.b[idx].lo = pt;
+        else
+            ret.pieces.b[idx].hi = pt;
+        cnt++;
     }
-
     ret.pop = pop;
-    pack_array(map, (uint8_t*)buff, bitcnt);
-    ret.hi = buff[0];
-    ret.lo = buff[1];
-
     return ret;
 }
 
@@ -481,20 +480,19 @@ void Board::unpack(PositionPacked& pp, Board& ret) {
     ret._pm.clear();
 
     uint64_t pop{pp.pop};
-    uint8_t  map[32];
-    uint64_t buff[2] = {pp.hi, pp.lo};
-    std::memset(map, 0x00, sizeof(map));
-    unpack_array((uint8_t*)buff, map, 32);
-    uint8_t *pmap = map;
-    for(uint8_t ord{0}; pop; ++ord, pop >>= 1) {
+    uint8_t  cnt{0};
+    for ( uint8_t ord{0}; pop; ++ord, pop >>= 1 ) {
         if ( pop & 1 ) {
-            uint8_t   pb = *pmap++;
-            PieceType pt = static_cast<PieceType>( pb & PIECE_MASK);
-            Color     c  = static_cast<Color>    ((pb & SIDE_MASK) != 0);
-            PiecePtr  ptr= Piece::factory(pt, &ret, c);
-            Square    org(ord);
-            ret._pm[org] = ptr;
-            ptr->set_square(org);
+            int idx{cnt/2};
+            uint8_t pb  = ( cnt & 1 )        // odd
+                        ? pp.pieces.b[idx].lo
+                        : pp.pieces.b[idx].hi;
+
+            auto pptr = Piece::fromByte(pb);
+            _pm[ord] = pptr;
+            pptr->set_board(&ret);
+            pptr->set_square(Square(ord));
+            cnt++;
         }
     }
 

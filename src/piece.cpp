@@ -78,7 +78,6 @@ std::ostream& operator<<(std::ostream& os, const Piece& p) {
     return os;
 }
 
-
 const DirList& Piece::get_dirs() const { return none_dirs; }
 
 // move the piece as indicated in the move, and handles any capture.
@@ -181,6 +180,13 @@ PiecePtr Piece::factory(PieceType pt, Board* b, Color c ) {
     }
     return nullptr;
 }
+
+PiecePtr Piece::Piece::fromByte(uint8_t b) {
+    PieceType pt = static_cast<PieceType>( b & PIECE_MASK);
+    Color     c  = static_cast<Color>    ((b & SIDE_MASK) != 0);
+    return Piece::factory(pt, nullptr, c);
+}
+
 
 Empty::Empty()
 : Piece( PT_EMPTY, nullptr, NONE )

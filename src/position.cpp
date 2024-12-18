@@ -24,16 +24,24 @@ bool GameInfoPacked::operator<(const GameInfoPacked& o) const {
 }
 
 PositionPacked::PositionPacked() 
-: gi(0), pop{0}, hi{0}, lo{0}
-{}
+: gi(0), pop{0}
+{
+    pieces.w[0] = pieces.w[1] = 0;
+}
 
 PositionPacked::PositionPacked(const PositionPacked& o)
-: gi(o.gi), pop{o.pop}, hi{o.hi}, lo{o.lo}
-{}
+: gi(o.gi), pop{o.pop}
+{
+    pieces.w[0] = o.pieces.w[0];
+    pieces.w[1] = o.pieces.w[1];
+}
 
 PositionPacked::PositionPacked(uint32_t g, uint64_t p, uint64_t h, uint64_t l)
-: gi(g), pop{p}, hi{h}, lo{l}
-{}
+: gi(g), pop{p}
+{
+    pieces.w[0] = h;
+    pieces.w[1] = l;
+}
 
 std::string PositionPacked::hexString() const {
     int len((sizeof(PositionPacked)*2)+1);
@@ -47,9 +55,8 @@ std::string PositionPacked::hexString() const {
     return std::string(b);
 }
 
-
 bool PositionPacked::operator==(const PositionPacked& o) const {
-    return pop == o.pop && gi == o.gi && hi == o.hi && lo == o.lo;
+    return pop == o.pop && !memcmp(pieces.w, o.pieces.w, sizeof(PositionPacked::pieces));
 }
 
 bool PositionPacked::operator!=(const PositionPacked& o) const {
@@ -59,10 +66,10 @@ bool PositionPacked::operator!=(const PositionPacked& o) const {
 bool PositionPacked::operator<(const PositionPacked& o) const {
     if ( pop == o.pop ) {
         if ( gi.i == o.gi.i ) {
-            if ( hi == o.hi ) {
-                return lo < o.lo;
+            if ( pieces.w[0] == o.pieces.w[0] ) {
+                return pieces.w[1] < o.pieces.w[1];
             }
-            return hi < o.hi;
+            return pieces.w[0] < o.pieces.w[0];
         }
         return gi.i < o.gi.i;
     }
@@ -77,8 +84,8 @@ std::ostream& operator<<(std::ostream& os, const PositionPacked& pp) {
     os << pp.gi.i << ',';
     os.width(16);
     os << pp.pop << ','
-       << pp.hi << ','
-       << pp.lo;
+       << pp.pieces.w[0] << ','
+       << pp.pieces.w[1];
 
 	os.flags(oflags);
 	os.fill(ofill);

@@ -58,6 +58,7 @@ protected:
 
 public:
     static PiecePtr factory(PieceType pt, Board* b, Color s = NONE );
+    static PiecePtr fromByte(uint8_t b);
     static PiecePtr EMPTY;
     static const char *glyphs;
     static const byte ranges[8];

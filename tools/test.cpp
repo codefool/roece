@@ -7,8 +7,7 @@ bool positionpacked_comparitor(libcf::ucharptr_c lhs, libcf::ucharptr_c rhs, siz
     PositionPacked& lhsr = *(PositionPacked*)lhs;
     PositionPacked& rhsr = *(PositionPacked*)rhs;
     // return lhsr == rhsr;
-    return lhsr.pop == rhsr.pop && lhsr.hi == rhsr.hi && lhsr.lo == rhsr.lo;
-    // return *(PositionPacked*)lhs == *(PositionPacked*)rhs;
+    return lhsr.pop == rhsr.pop && !memcmp(lhsr.pieces.w, rhsr.pieces.w, sizeof(PositionPacked::pieces));
 }
 
 // queue for positions in work
@@ -68,7 +67,7 @@ int main() {
                 if ( !domain_positions.search(p0) ) {
                     // we haven't processed this position before so queue it
                     work.push(p0);
-                    std::cout << "<-" << p0.hexString() << std::endl;
+                    std::cout << "<-" << p0.hexString() << c.diagram() << std::endl;
                 } 
             }
         }

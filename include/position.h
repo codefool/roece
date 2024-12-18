@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <ostream>
+#include <cstring>
 
 #pragma pack(1)
 union GameInfoPacked {
@@ -43,8 +44,16 @@ struct PositionPacked
 {
     GameInfoPacked gi;    // 32-bits
     uint64_t       pop;   // population bitmap
-    uint64_t       lo;    // lo 64-bits population info
-    uint64_t       hi;    // hi 64-bits population info
+    union {
+        uint64_t w[2];   
+        struct {
+            uint8_t hi:4;
+            uint8_t lo:4;
+        } b[16];
+    } pieces;
+
+    // uint64_t       lo;    // lo 64-bits population info
+    // uint64_t       hi;    // hi 64-bits population info
 
     PositionPacked();
     PositionPacked(const PositionPacked& o);
