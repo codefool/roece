@@ -32,12 +32,10 @@ int main() {
     int allmoves(0);
     int movecnt(0);
     while( work.pop(pp) ) {
-        std::cout << "->" << pp.hexString() << std::endl;
         domain_positions.insert(pp);
         b.init(pp);
         b.zobristHash();
         b.get_moves(ml);
-        std::cout << b.diagram() << std::endl;
         if (ml.size() > maxmoves)
             maxmoves = ml.size();
         if (ml.size() < minmoves)
@@ -51,13 +49,6 @@ int main() {
             MoveAction ma = c.apply_move(mv);
             PositionPacked p0 = c.pack();
 
-            std::cout << mv << std::endl 
-                      << "Before:" << b.diagram()
-                      << b.pack().hexString() << std::endl
-                      << "After:" << c.diagram() 
-                      << p0.hexString()
-                      << std::endl;
-
             if ( mv.resultsInRootPosition(ma) ) {
                 if ( !root_positions.search(p0) ) {
                     root_positions.insert(p0);
@@ -67,11 +58,15 @@ int main() {
                 if ( !domain_positions.search(p0) ) {
                     // we haven't processed this position before so queue it
                     work.push(p0);
-                    std::cout << "<-" << p0.hexString() << c.diagram() << std::endl;
                 } 
             }
         }
-        std::cout << std::hex << std::setw(16) << std::setfill('0') << b.zobristHash() << ' ' << pp.hexString() << ':' << b.fen() << ':' << std::dec << work.size() << '/' << newroots << '/' << newdomain << std::endl;
+        std::cout << std::hex << std::setw(16) << std::setfill('0') << b.zobristHash() << ' ' << pp.hexString() 
+                  << ':' << std::setfill(' ') << std::setw(64) << std::left << b.fen() << ':' 
+                  << std::dec << std::setw(16) << std::right << work.size() 
+                  << '/' << std::setw(8) << newroots 
+                  << '/' << newdomain 
+                  << std::endl;
     }
     std::cout << "Max moves: " << maxmoves << " Min moves:" << minmoves << " Avg moves:" << (allmoves / movecnt) << std::endl;
     return 0;

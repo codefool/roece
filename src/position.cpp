@@ -87,9 +87,16 @@ std::ostream& operator<<(std::ostream& os, const PositionPacked& pp) {
        << pp.pieces.w[0] << ','
        << pp.pieces.w[1];
 
+    os.width(2);
+    for(int i{0}; i < 16; ++i) {
+        os << ' ' << unsigned(pp.pieces.b[i].l) << ':' << unsigned(pp.pieces.b[i].r);
+    }
+    os << std::endl;
+
 	os.flags(oflags);
 	os.fill(ofill);
 	os.width(owid);
+
 	return os;
 }
 

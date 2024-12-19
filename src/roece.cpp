@@ -1,5 +1,15 @@
 #include "roece.h"
 
+const char *PieceName[] = {
+    "PT_EMPTY",
+    "PT_KING",
+    "PT_QUEEN",
+    "PT_BISHOP",
+    "PT_KNIGHT",
+    "PT_ROOK",
+    "PT_PAWN",
+};
+
 const Offset offs[] = {
 	{+1,+0},  // UP
 	{-1,+0},  // DN

@@ -137,8 +137,8 @@ std::uint64_t Board::zobristHash() const {
             PiecePtr ptr = at(rank,file);
             if ( !ptr->is_empty() ) {
                 int typ = ptr->type() - 1;          // 0-5
-                if (ptr->type() == PT_PAWN_OFF)
-                    --typ;
+                // if (ptr->type() == PT_PAWN_OFF)
+                //     --typ;
                 zob ^= pieces_rn[ptr->color()][typ][ptr->square().ordinal()];
             }
         }

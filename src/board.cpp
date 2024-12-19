@@ -11,7 +11,7 @@ Board::Board(const char *fen) {
     }
 }
 
-Board::Board(PositionPacked& pp) {
+Board::Board(const PositionPacked& pp) {
     unpack(pp,*this);
 }
 
@@ -193,9 +193,9 @@ PiecePtr Board::make_piece( PieceType pt, Color c ) {
 void Board::set( Square squ, PiecePtr ptr ) {
     // if the target square isn't empty - empty it
     remove( at(squ) );
-    // erase the src object from the board
+    // remove the piece from the board
     remove( ptr );
-    // and put it back
+    // and put it back where it belongs
     _pm[squ] = ptr;
     // and record new location in the piece
     ptr->set_square(squ);
@@ -412,7 +412,7 @@ std::string Board::fen() const {
 
 std::string Board::diagram() {
     std::stringstream ss;
-    ss << "   a b c d e f g h" << std::endl;
+    ss << std::endl << "   a b c d e f g h" << std::endl;
     for ( short r = R8; r >= R1; --r ) {
         ss << rank_glyph(r) << ": ";
         for( short f = Fa; f <= Fh; ++f ) {
@@ -453,49 +453,38 @@ PositionPacked Board::pack() const {
     // 
     // Pack the population as a 64-bit map depicting which squares
     // [0..63] contain pieces, hashed by ordinal number. Hence, a0 (0)
-    // is the MSB, and h8 (63) is the LSB.
+    // is the LSB, and h8 (63) is the MSB.
     //
-    uint8_t  cnt{0};    
+    //        h       g       f       e       d       c       b       a
+    // 8765432187654321876543218765432187654321876543218765432187654321
+    // 6                                                              0 
+    // 3 
+    //
+    // There can be max 32 pieces on the board - whose type information
+    // can be packed into four bit (nibble.)
+    uint8_t  bitcnt{0};    
     uint64_t pop{0};
     for ( auto piece : _pm ) {
-        uint8_t ord = 63 - piece.first.ordinal(); // 63..0
-        pop |= (uint64_t)(1ULL << ord);
+        uint8_t ord = piece.first.ordinal(); // 0..63
+        pop |= (uint64_t)(1ull << ord);
         uint8_t pt  = piece.second->toByte();
-        int idx{cnt/2};
-        if ( cnt & 1 )  // odd
-            ret.pieces.b[idx].lo = pt;
+        int idx{bitcnt/2};                           // 0,0,1,1,2,2,...  
+        if ( bitcnt & 1 )                            // if odd set right, else left
+            ret.pieces.b[idx].r = pt;
         else
-            ret.pieces.b[idx].hi = pt;
-        cnt++;
+            ret.pieces.b[idx].l = pt;
+        bitcnt++;
     }
     ret.pop = pop;
     return ret;
 }
 
-void Board::init(PositionPacked& pp) {
-    unpack(pp,*this);
+void Board::init(const PositionPacked& pp) {
+    unpack( pp, *this );
 }
 
-void Board::unpack(PositionPacked& pp, Board& ret) {
+void Board::unpack(const PositionPacked& pp, Board& ret) {
     ret._pm.clear();
-
-    uint64_t pop{pp.pop};
-    uint8_t  cnt{0};
-    for ( uint8_t ord{0}; pop; ++ord, pop >>= 1 ) {
-        if ( pop & 1 ) {
-            int idx{cnt/2};
-            uint8_t pb  = ( cnt & 1 )        // odd
-                        ? pp.pieces.b[idx].lo
-                        : pp.pieces.b[idx].hi;
-
-            auto pptr = Piece::fromByte(pb);
-            _pm[ord] = pptr;
-            pptr->set_board(&ret);
-            pptr->set_square(Square(ord));
-            cnt++;
-        }
-    }
-
     ret.set_castle_right(WHITE, KINGSIDE,  pp.gi.f.castle_right_white_kingside );
     ret.set_castle_right(WHITE, QUEENSIDE, pp.gi.f.castle_right_white_queenside);
     ret.set_castle_right(BLACK, KINGSIDE,  pp.gi.f.castle_right_black_kingside );
@@ -509,6 +498,24 @@ void Board::unpack(PositionPacked& pp, Board& ret) {
 
     ret.set_half_move_clock(pp.gi.f.half_move_clock);
     ret.set_full_move_count(pp.gi.f.full_move_cnt);
+
+    uint64_t pop{pp.pop};
+    uint8_t  bitcnt{0};
+    uint64_t bit{1};
+    for ( uint8_t ord{0}; bit; ++ord, bit <<= 1ull ) {
+        if ( pop & bit ) {
+            int idx{bitcnt/2};                  // 0,0,1,1,2,2,...
+            uint8_t pt  = ( bitcnt & 1 )        // odd
+                        ? pp.pieces.b[idx].r
+                        : pp.pieces.b[idx].l;
+
+            auto pptr = Piece::fromByte(pt);
+            _pm[ord] = pptr;
+            pptr->set_board(&ret);
+            pptr->set_square(Square(ord));
+            bitcnt++;
+        }
+    }
 }
 
 

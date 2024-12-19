@@ -14,9 +14,9 @@ private:
 
 public:
     Board(const char *fen = EMPTY_BOARD);
-    Board(PositionPacked& pp);
+    Board(const PositionPacked& pp);
     Board(const Board& other);
-    void init(PositionPacked& pp);
+    void init(const PositionPacked& pp);
     Color get_on_move() const;
     void set_on_move(Color s);
     void toggle_on_move();
@@ -55,7 +55,7 @@ public:
     std::string diagram();
 
     PositionPacked pack() const;
-    void unpack(PositionPacked& pp, Board& ret);
+    void unpack(const PositionPacked& pp, Board& ret);
     std::uint64_t zobristHash() const;
 
     EvaluationResult evaluate();

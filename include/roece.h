@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cassert>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -23,9 +24,11 @@ enum PieceType : uint8_t {
     PT_KNIGHT   = 0x04,
     PT_ROOK     = 0x05,
     PT_PAWN     = 0x06,
-    PT_PAWN_OFF = 0x07,
+    // PT_PAWN_OFF = 0x07,
     PT_NONE     = 0x80
 };
+
+extern const char *PieceName[];
 
 #define SIDE_MASK  0x08
 #define BLACK_MASK 0x08

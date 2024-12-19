@@ -45,15 +45,17 @@ struct PositionPacked
     GameInfoPacked gi;    // 32-bits
     uint64_t       pop;   // population bitmap
     union {
-        uint64_t w[2];   
+        uint64_t w[2];
+        // traversing the board from top-bottom (r8-r1) and 
+        // left-to-right (fa-fh), the piece type is packed
+        // a b c d e f g h
+        // l r l r l r l r
+        // l r l r l r l r
         struct {
-            uint8_t hi:4;
-            uint8_t lo:4;
+            uint8_t l:4;
+            uint8_t r:4;
         } b[16];
     } pieces;
-
-    // uint64_t       lo;    // lo 64-bits population info
-    // uint64_t       hi;    // hi 64-bits population info
 
     PositionPacked();
     PositionPacked(const PositionPacked& o);
