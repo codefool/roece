@@ -36,7 +36,7 @@ clean:
 	-rm $(OBJ_DIR)/*.o $(LIB_NAME)
 
 clean-test:
-	rm -rf /tmp/ttemp/ /tmp/positions/ /tmp/roots/ /tmp/domain/
+	rm -rf /tmp/work/ttemp/ /tmp/work/positions/ /tmp/work/roots/ /tmp/work/domain/
 
 .PHONY: build-ver
 

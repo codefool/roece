@@ -1,21 +1,33 @@
 #include "roece.h"
-#include "../libcf/include/libcf.h"
+#include "/usr/local/libcf/include/libcf.h"
 
-bool positionpacked_comparitor(libcf::ucharptr_c lhs, libcf::ucharptr_c rhs, size_t keylen) {
+bool positionpacked_comparitor(const void *lhs, const void *rhs, size_t keylen) {
     // lhs and rhs are pointers to PositionPacked structures - we only want to 
     // compare the population of the board and ignore the game information.
     PositionPacked& lhsr = *(PositionPacked*)lhs;
     PositionPacked& rhsr = *(PositionPacked*)rhs;
-    // return lhsr == rhsr;
-    return lhsr.pop == rhsr.pop && !memcmp(lhsr.pieces.w, rhsr.pieces.w, sizeof(PositionPacked::pieces));
+    bool ret = lhsr.compareNoClocks(rhsr);
+    return ret;
+    // return lhsr.pop == rhsr.pop && memcmp(lhsr.pieces.w, rhsr.pieces.w, sizeof(PositionPacked::pieces)) == 0;
+}
+
+// hasher that does not consider move clocks.
+std::string positionpacked_hasher(const void *key, size_t keylen, size_t hashlen) {
+    PositionPacked  pp = *(PositionPacked*)key;
+    pp.gi.f.full_move_cnt = pp.gi.f.half_move_clock = 0;
+
+    libcf::MD5 md5;
+    md5.update((void *)pp.pieces.w, sizeof(PositionPacked));
+    md5.finalize();
+    return md5.hexdigest().substr( 0, hashlen );
 }
 
 // queue for positions in work
-libcf::dq<PositionPacked> work( "/tmp", "positions", sizeof(PositionPacked) * 1024 );
+libcf::dq<PositionPacked> work( "/tmp/work", "positions", sizeof(PositionPacked) * 1024 );
 // table for domain positions
-libcf::dht<PositionPacked> domain_positions( "/tmp", "domain", positionpacked_comparitor ); 
+libcf::dht<PositionPacked> domain_positions( "/tmp/work", "domain", positionpacked_comparitor, positionpacked_hasher ); 
 // table for root positions
-libcf::dht<PositionPacked> root_positions( "/tmp", "roots", positionpacked_comparitor ); 
+libcf::dht<PositionPacked> root_positions( "/tmp/work", "roots", positionpacked_comparitor, positionpacked_hasher ); 
 
 int main() {
     std::cout << bi << std::endl;
@@ -31,7 +43,11 @@ int main() {
     int minmoves(100);
     int allmoves(0);
     int movecnt(0);
+
+    std::cout << "pp.pieces size " << sizeof(PositionPacked::pieces) << std::endl;
     while( work.pop(pp) ) {
+        if ( domain_positions.search(pp) )
+            continue;
         domain_positions.insert(pp);
         b.init(pp);
         b.zobristHash();
@@ -48,6 +64,8 @@ int main() {
             Board c(pp);
             MoveAction ma = c.apply_move(mv);
             PositionPacked p0 = c.pack();
+
+            std::cout << c.diagram() << std::endl;
 
             if ( mv.resultsInRootPosition(ma) ) {
                 if ( !root_positions.search(p0) ) {

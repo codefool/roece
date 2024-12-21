@@ -1,5 +1,11 @@
 #include "position.h"
 
+
+
+GameInfoPacked::GameInfoPacked()
+: i{0}
+{}
+
 GameInfoPacked::GameInfoPacked(uint32_t v)
 : i{v}
 {}
@@ -22,6 +28,34 @@ bool GameInfoPacked::operator<(const GameInfoPacked& o) const {
     bool ret = (i < o.i);
     return ret;
 }
+
+const Mask GameInfoPacked::_masks[FIELD_CNT] = {
+    { 0x0000007f, 0x7f000000, 24}, // EN_PASSANT_ORD
+    { 0x00000001, 0x00800000, 23}, // CASTLE_RIGHT_WHITE_KINGSIDE
+    { 0x00000001, 0x00400000, 22}, // CASTLE_RIGHT_WHITE_QUEENSIDE
+    { 0x00000001, 0x00200000, 21}, // CASTLE_RIGHT_BLACK_KINGSIDE
+    { 0x00000001, 0x00100000, 20}, // CASTLE_RIGHT_BLACK_QUEENSIDE
+    { 0x0000000f, 0x00f00000, 20}, // ALL_CASTLE_RIGHTS
+    { 0x00000006, 0x000fc000, 14}, // PIECE_CNT
+    { 0x00000001, 0x00002000, 13}, // ON_MOVE
+    { 0x00000006, 0x00001f80,  7}, // FULL_MOVE_CNT
+    { 0x00000007, 0x0000007f,  0}, // HALF_MOVE_CLOCK
+};
+
+// When comparing GameInfoPacked values, we want to exclude the values
+// of the clocks, because they are always changing and for the purposes
+// of game play we aren't concerned with which move number in gameplay
+// generated the position, only that the position was re-encountered.
+//
+// To deal with portability, we do the following monkey-love to 
+// generate an appropriate mask at runtime.
+//
+uint32_t GameInfoPacked::ExcludeClockMask = [](){
+    GameInfoPacked x(0xffff);
+    x.f.full_move_cnt = 0;
+    x.f.half_move_clock = 0;
+    return x.i;
+}();
 
 PositionPacked::PositionPacked() 
 : gi(0), pop{0}
@@ -55,12 +89,19 @@ std::string PositionPacked::hexString() const {
     return std::string(b);
 }
 
-bool PositionPacked::operator==(const PositionPacked& o) const {
-    return pop == o.pop && !memcmp(pieces.w, o.pieces.w, sizeof(PositionPacked::pieces));
+bool PositionPacked::operator==(const PositionPacked& rhs) const {
+    return memcmp((void *)this, (void *)&rhs, sizeof(PositionPacked)) == 0;
+    // return pop == o.pop && !memcmp(pieces.w, o.pieces.w, sizeof(PositionPacked::pieces));
 }
 
-bool PositionPacked::operator!=(const PositionPacked& o) const {
-    return ! (*this == o);
+bool PositionPacked::operator!=(const PositionPacked& rhs) const {
+    return ! (*this == rhs);
+}
+
+bool PositionPacked::compareNoClocks(const PositionPacked& rhs) const {
+    return (gi.i & rhs.gi.i & GameInfoPacked::ExcludeClockMask) != 0
+           && pop == rhs.pop
+           && memcmp(pieces.w, rhs.pieces.w, sizeof(PositionPacked::pieces)) == 0;
 }
 
 bool PositionPacked::operator<(const PositionPacked& o) const {
