@@ -62,11 +62,15 @@ Square Square::operator+( const Offset& rhs ) const {
 Square Square::UNBOUNDED(-1, -1);
 
 std::ostream& operator<<(std::ostream& os, const Square& squ) {
-    os << file_glyph(squ.file()) << rank_glyph(squ.rank());
+    if ( squ == Square::UNBOUNDED ) {
+        os << "--";
+    } else {
+        os << file_glyph(squ.file()) << rank_glyph(squ.rank());
+    }
     return os;
 }
 
-uint64_t Square::ordinal() const {
+byte Square::ordinal() const {
     return (uint64_t)(rank() * 8 + file());
 }
 

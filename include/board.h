@@ -28,6 +28,7 @@ public:
     void set_castle_right( byte bit, bool state );
     void set_castle_right( Color c, CastleSide s, bool state);
     byte get_all_castle_rights() const { return _castle_rights; }
+    std::string get_castle_rights_string() const;
     bool has_en_passant() const;
     Square get_en_passant() const;
     void clear_en_passant();

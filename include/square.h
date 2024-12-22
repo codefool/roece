@@ -27,7 +27,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const Square& squ);
 
-    uint64_t ordinal() const;    
+    byte ordinal() const;    
 
 public:
     static Square UNBOUNDED;

@@ -1,4 +1,5 @@
 #include "roece.h"
+#include "iomanip"
 #include "util.h"
 
 std::vector<std::string> split(std::string target, std::string delimiter);
@@ -60,7 +61,7 @@ void Board::toggle_on_move() {
 }
 
 bool Board::none_can_castle() const {
-    return !_castle_rights;
+    return (_castle_rights & 0x0f) == 0;
 }
 
 void Board::clear_castle_rights() {
@@ -70,6 +71,20 @@ void Board::clear_castle_rights() {
 bool Board::get_castle_right( byte bit ) const {
     return (_castle_rights & bit) != 0;
 }
+
+std::string Board::get_castle_rights_string() const {
+    std::stringstream ss;
+    if ( none_can_castle() ) {
+        ss << '-';
+    } else {
+        if ( get_castle_right( WHITE, KINGSIDE  ) ) ss << 'K';
+        if ( get_castle_right( WHITE, QUEENSIDE ) ) ss << 'Q';
+        if ( get_castle_right( BLACK, KINGSIDE  ) ) ss << 'k';
+        if ( get_castle_right( BLACK, QUEENSIDE ) ) ss << 'q';
+    }
+    return ss.str();
+}
+
 
 // convert color and side attributes to an ordinal bit position
 //        white  black
@@ -88,7 +103,7 @@ byte Board::castle_bit(Color c, CastleSide s ) const {
     //          ? CASTLE_RIGHT_WHITE_KINGSIDE : CASTLE_RIGHT_WHITE_QUEENSIDE
     //        : (s == CASTLE_KINGSIDE)
     //          ? CASTLE_RIGHT_BLACK_KINGSIDE : CASTLE_RIGHT_BLACK_QUEENSIDE;
-    return 1 << ((c << 1) + s);
+    return (1 << ((c << 1) + s)) & 0x0f;
 }
 
 bool Board::get_castle_right( Color c, CastleSide s ) const {
@@ -356,7 +371,7 @@ std::string Board::fen() const {
     // Field 2 - Active Color
     // - "w" means that White is on move; "b" means that Black is on move
     //
-    ss << "bw"[get_on_move() == BLACK]
+    ss << "bw"[get_on_move() == WHITE]
        << ' ';
 
     // Field 3 - Castling Availability
@@ -370,14 +385,15 @@ std::string Board::fen() const {
     // - A situation that temporarily prevents castling does not prevent
     //    the use of this notation.
     //
-    if ( none_can_castle() ) {
-        ss << '-';
-    } else {
-        if ( get_castle_right( WHITE, KINGSIDE  ) ) ss << 'K';
-        if ( get_castle_right( WHITE, QUEENSIDE ) ) ss << 'Q';
-        if ( get_castle_right( BLACK, KINGSIDE  ) ) ss << 'k';
-        if ( get_castle_right( BLACK, QUEENSIDE ) ) ss << 'q';
-    }
+    ss << get_castle_rights_string();
+    // if ( none_can_castle() ) {
+    //     ss << '-';
+    // } else {
+    //     if ( get_castle_right( WHITE, KINGSIDE  ) ) ss << 'K';
+    //     if ( get_castle_right( WHITE, QUEENSIDE ) ) ss << 'Q';
+    //     if ( get_castle_right( BLACK, KINGSIDE  ) ) ss << 'k';
+    //     if ( get_castle_right( BLACK, QUEENSIDE ) ) ss << 'q';
+    // }
     ss << ' ' ;
 
     // Field 4 - En Passant target square
@@ -419,6 +435,17 @@ std::string Board::diagram() {
             PiecePtr pt = at(Square(r,f));
             ss << pt->glyph() << ' ';
         }
+        switch( r ) {
+            case R8: ss << " ep:" << _en_passant;                break;
+            case R7: ss << " cr:" << get_castle_rights_string(); break;
+            case R6: ss << " om:" << ((_on_move)?"b":"w");       break;
+            case R5: ss << " hm:" << _half_move_clock;           break;
+            case R4: ss << " fm:" << _full_move_cnt;             break;
+            case R3:
+            case R2:
+            case R1:
+                break;
+        };
         ss << std::endl;
     }
     return ss.str();
