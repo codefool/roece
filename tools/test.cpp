@@ -82,13 +82,11 @@ int main() {
             const char *res;
             if ( mv.resultsInRootPosition(ma) ) {
                 if ( !root_positions.search(p0) ) {
-                    if( !root_positions.insert(p0) ) {
-                        std::cout << "Error inserting";
-                        res = "E";
-                    } else {
-                        newroots++;
-                        res = "r+";
-                    }
+                    root_positions.insert(p0);
+                    newroots++;
+                    res = "r+";
+                } else {
+                    continue;
                 }
             } else {
                 if ( !domain_positions.search(p0) ) {
@@ -101,10 +99,14 @@ int main() {
                     work.push(qe);
                     newdomain++;
                     res = "d+";
+                } else {
+                    continue;
                 }
             }
             if (res != nullptr) {
-                std::cout << '\t' << std::setfill(' ') << std::setw(64) << std::left << c.fen() << ' '
+                std::cout << '\t' 
+                        // << mv << ' '
+                        << std::setfill(' ') << std::setw(64) << std::left << c.fen() << ' '
                         << positionpacked_hasher(&p0, sizeof(PositionPacked), 3) 
                         << ' ' << res 
                         << std::endl;

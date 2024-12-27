@@ -27,6 +27,10 @@ $(LIB_NAME) : $(OBJ)
 	$(ARC) $(AFLAGS) $@ $(OBJ)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HDR)
+ifndef VER_UPDATED
+	$(MAKE) build-ver
+	define VER_UPDATED = true
+endif
 	$(CC) $(CFLAGS) -c $< -o $@
 
 build-ver:
@@ -37,8 +41,6 @@ clean:
 
 clean-test:
 	rm -rf /tmp/work/ttemp/ /tmp/work/positions/ /tmp/work/roots/ /tmp/work/domain/
-
-.PHONY: build-ver
 
 test: $(TOOLS_DIR)/test.cpp build-ver $(LIB_NAME)
 	$(CC) $(CFLAGS) $(TOOLS_DIR)/test.cpp -I. -L/usr/lib/x86_64-linux-gnu $(LIB_INC) $(LIB_NAME) -o test
