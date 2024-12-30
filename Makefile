@@ -27,10 +27,6 @@ $(LIB_NAME) : $(OBJ)
 	$(ARC) $(AFLAGS) $@ $(OBJ)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HDR)
-ifndef VER_UPDATED
-	$(MAKE) build-ver
-	define VER_UPDATED = true
-endif
 	$(CC) $(CFLAGS) -c $< -o $@
 
 build-ver:
@@ -43,7 +39,7 @@ clean-test:
 	rm -rf /tmp/work/ttemp/ /tmp/work/positions/ /tmp/work/roots/ /tmp/work/domain/
 
 test: $(TOOLS_DIR)/test.cpp build-ver $(LIB_NAME)
-	$(CC) $(CFLAGS) $(TOOLS_DIR)/test.cpp -I. -L/usr/lib/x86_64-linux-gnu $(LIB_INC) $(LIB_NAME) -o test
+	$(CC) $(CFLAGS) $(TOOLS_DIR)/test.cpp -I. -pthread -L/usr/lib/x86_64-linux-gnu $(LIB_INC) $(LIB_NAME) -o test
 
 rd128: $(TOOLS_DIR)/rd128.cpp
 	$(CC) $(CFLAGS) $(TOOLS_DIR)/rd128.cpp -L/usr/lib/x86_64-linux-gnu -o rd128

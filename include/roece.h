@@ -127,6 +127,7 @@ struct Move {
     Square     org;
     Square     dst;
 
+    Move(){}
     Move(MoveAction ma, Square o, Square d)
     : action(ma), org(o), dst(d)
     {}
