@@ -6,7 +6,7 @@ struct build_info {
     std::string app_name = "Ridiculously Over-Engineered Chess Engine";
     int ver_major = 0;
     int ver_minor = 0;
-    int ver_build = 370;
+    int ver_build = 398;
     friend std::ostream& operator<< (std::ostream& os, const build_info& bi);
 };
 

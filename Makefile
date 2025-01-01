@@ -41,5 +41,8 @@ clean-test:
 test: $(TOOLS_DIR)/test.cpp build-ver $(LIB_NAME)
 	$(CC) $(CFLAGS) $(TOOLS_DIR)/test.cpp -I. -pthread -L/usr/lib/x86_64-linux-gnu $(LIB_INC) $(LIB_NAME) -o test
 
+itrtest: $(TOOLS_DIR)/itrtest.cpp $(LIB_NAME) $(LIB_INC)
+	$(CC) $(CFLAGS) $(TOOLS_DIR)/itrtest.cpp -I. -L/usr/lib/x86_64-linux-gnu $(LIB_INC) $(LIB_NAME) -o itrtest
+
 rd128: $(TOOLS_DIR)/rd128.cpp
 	$(CC) $(CFLAGS) $(TOOLS_DIR)/rd128.cpp -L/usr/lib/x86_64-linux-gnu -o rd128

@@ -45,7 +45,7 @@ public:
     Board deep_copy() const;
     MoveAction apply_move(const Move& move );
 
-    SeekResult seek( PiecePtr src, Dir dir, short range );
+    SeekResult seek( Color side, Square src, Dir dir, short range );
     PiecePtr at(Square squ) const;
     PiecePtr at(byte rank, byte file) const;
     PiecePtr make_piece( PieceType pt, Color s );

@@ -1,5 +1,17 @@
 #include "roece.h"
 
+MovePacked::MovePacked()
+: w{0}
+{}
+
+MovePacked::MovePacked(const Move& m)
+: w{0}
+{
+    b.ma  = (m.action & 0x0f);
+    b.org = m.org.ordinal();
+    b.dst = m.dst.ordinal();
+}
+
 // These move actions produce a new root position. In general,
 // these are actions that are a pawn move and/or piece capture.
 bool Move::resultsInRootPosition(MoveAction ma) {

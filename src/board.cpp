@@ -170,9 +170,9 @@ void Board::inc_full_move_count() {
     _full_move_cnt++;
 }
 
-SeekResult Board::seek( PiecePtr src, Dir dir, short range ) {
+SeekResult Board::seek( Color side, Square src, Dir dir, short range ) {
     SeekResult ret;
-    Square here = src->square();
+    Square here = src;
     while ( range-- ) {
         here += offs[ dir ];
         if ( !here.in_bounds() )
@@ -181,9 +181,9 @@ SeekResult Board::seek( PiecePtr src, Dir dir, short range ) {
         PiecePtr occ = at(here);
         if ( ! occ->is_empty() ) {
             ret.occupant = occ;
-            ret.rc = (src->is_enemy(occ)) 
-                    ? SEEKRC_FOUND_ENEMY 
-                    : SEEKRC_FOUND_FRIENDLY;
+            ret.rc = (occ->color() == side) 
+                   ? SEEKRC_FOUND_FRIENDLY
+                   : SEEKRC_FOUND_ENEMY;
             break;
         }
     }
@@ -454,7 +454,8 @@ std::string Board::diagram() {
 void Board::get_moves(MoveList& moves) {
     moves.clear();
     for ( auto p : _pm ) {
-        p.second->get_moves( moves );
+        if ( p.second->color() == get_on_move() )
+            p.second->get_moves( moves );
     }
 }
 

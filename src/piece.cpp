@@ -17,7 +17,7 @@ Rook::Rook() : Piece()
 Pawn::Pawn() : Piece()
 {}
 
-Piece::Piece( PieceType pt, Board *b, Color c )
+Piece::Piece( PieceType pt, Board* b, Color c )
 : _t(pt), _b(b), _c(c), _s(Square::UNBOUNDED)
 {
     set_glyph();
@@ -39,8 +39,10 @@ const uint8_t   Piece::toByte() const {
 		r |= BLACK_MASK;
 	return r;
 }
-const bool Piece::is_empty()  const { return _t == PT_EMPTY; }
-const bool Piece::is_knight() const { return _t == PT_KNIGHT; }
+const bool Piece::has_moved() const { return _m; }
+const bool Piece::is_type(PieceType pt) const { return _t == pt; }
+const bool Piece::is_empty()  const { return is_type(PT_EMPTY); }
+const bool Piece::is_knight() const { return is_type(PT_KNIGHT); }
 const bool Piece::is_white()  const { return !_c; }
 const bool Piece::is_black()  const { return  _c; }
 
@@ -73,6 +75,10 @@ void Piece::set_board(Board* brd) {
     _b = brd;
 }
 
+void Piece::set_moved(bool state) {
+    _m = state;
+}
+
 std::ostream& operator<<(std::ostream& os, const Piece& p) {
     os << p.glyph();
     return os;
@@ -87,23 +93,27 @@ const DirList& Piece::get_dirs() const { return none_dirs; }
 //    taken care of by sub-classes.
 MoveAction Piece::move( const Move move ) {
     board().set(move.dst, ptr());
+    set_moved();
     return move.action; 
 }
 
-PieceList Piece::get_attackers(PiecePtr trg) {
+PieceList Piece::get_attackers(const PiecePtr& trg) const {
     PieceList enemies;
     SeekResult sr;
 
     if ( trg->is_empty() )
         return enemies;
 
-    // using trg as a starting point, trace all rays
-    // axes, diag, and knight to see if an opposing
+    // using trg as a starting point, trace all rays axes, diag, and knight to see if an opposing
     // piece of the appropriate type is encountered.
+    // if we found an enemy in line-of-sight, but need to counter-check that the enemy can actually
+    // attack us. (Encountered sitation where an opposing King on its home square was a valid enemy 
+    // for the King on its home square.)
     for ( Dir dir : omni_dirs ) {
-        sr = board().seek( trg, dir, 7 );
-        if ( sr.rc == SEEKRC_FOUND_ENEMY )
+        sr = board().seek( color(), square(), dir, 7 );
+        if ( sr.rc == SEEKRC_FOUND_ENEMY && sr.occupant->can_attack(trg->square())) {
             enemies.push_back( sr.occupant );
+        }
     }
     for ( Dir dir : knight_dirs ) {
         PiecePtr enemy = board().at( trg->square() + offs[ dir ] );
@@ -122,11 +132,17 @@ PieceList Piece::get_attackers(PiecePtr trg) {
 }
 
 bool Piece::can_diag_attack( Square dst ) const {
-    return square().rank_distance( dst ) == square().file_distance( dst );
+    short range = ranges[type()];
+    short rd    = square().rank_distance( dst );
+    short fd    = square().file_distance( dst );
+    return rd == fd && (rd <= range && fd <= range);
 }
 
 bool Piece::can_axes_attack( Square dst ) const {
-    return square().rank_distance( dst ) == 0 || square().file_distance( dst ) == 0;
+    short range = ranges[type()];
+    short rd    = square().rank_distance( dst );
+    short fd    = square().file_distance( dst );
+    return (!rd || !fd) && (rd <= range && fd <= range);
 }
 
 bool Piece::can_omni_attack( Square dst ) const {
@@ -138,7 +154,7 @@ void Piece::get_dirs_moves( const DirList& dirs, MoveList& moves ) const {
     PiecePtr ptr = board().at( square() );
     bool isPawn = ptr->type() == PT_PAWN;
     for ( Dir dir : dirs ) {
-        res = board().seek( ptr, dir, range() );
+        res = board().seek( color(), square(), dir, range() );
         short sz( res.path.size() );
         for ( short idx(0); idx < sz; ++idx ) {
             MoveAction ma  = (isPawn) ? MV_MOVE_PAWN : MV_MOVE;
@@ -169,7 +185,7 @@ void Piece::get_omni_moves(MoveList& moves) const {
     get_axes_moves( moves );
 }
 
-PiecePtr Piece::factory(PieceType pt, Board* b, Color c ) {
+PiecePtr Piece::factory(PieceType pt, Board *b, Color c ) {
     switch(pt) {
     case PT_KING:   return std::make_shared<King>  (c, b);
     case PT_QUEEN:  return std::make_shared<Queen> (c, b);
@@ -205,7 +221,7 @@ PiecePtr Piece::EMPTY = std::make_shared<Empty>();
 const char *Piece::glyphs=".KQBNRPP";
 // range by PieceType ordinal
 // This is the max number of squares a piece can move
-//                             W K Q B N R P P
+//                             E K Q B N R P P
 const byte Piece::ranges[8] = {1,1,7,7,1,7,0,0};
 
 King::King(Color c, Board* b)
@@ -218,14 +234,63 @@ const DirList& King::get_dirs() const {
 void King::get_moves( MoveList& moves ) const { 
     get_omni_moves( moves ); 
     // check castle moves
+    if ( !has_moved() ) {
+        //  side    rook_file  open_files
+        //  queen   a          cde
+        //  king    h          efg
+        struct {
+            Dir        d;            // dir to scan from king to rook
+            short      r;            // # of squares that must be clear
+            File       rook_file;    // where the rook should be
+            MoveAction ma;           // resulting move action
+            File       open_file[3]; // files that cannot be under attack
+        } castle_info[2] = {
+            {LFT, 3, Fh, MV_CASTLE_KINGSIDE , {Fe,Ff,Fg}},
+            {RGT, 4, Fa, MV_CASTLE_QUEENSIDE, {Fc,Fd,Fe}},
+        };
+
+        for( auto side : { KINGSIDE, QUEENSIDE }) {
+            auto& ci = castle_info[side];
+            // if  king has right to castle on side s
+            // and king is not currently in check                    (8A4a)
+            // and rook is on its home square                        (8A3b)
+            // and rook has not moved                                (8A3b)  
+            // and the squares between the rook and king are empty   (8A4b)
+            // and the intervening squares are not under attack.     (8A4a)
+            if ( !board().get_castle_right(color(), side) )
+                continue;
+
+            PiecePtr rook = board().at(square().rank(), ci.rook_file);    // rook?
+            if ( !rook->is_type(PT_ROOK) || rook->has_moved() )
+                continue;
+
+            auto res = board().seek(rook->color(), rook->square(), ci.d, ci.r);
+            if ( res.rc != SEEKRC_FOUND_FRIENDLY || !res.occupant->is_type(PT_KING))
+                continue;
+                
+            // 8A4a king cannot be in check, and none of the spaces the king must pass
+            //      over can be under attack.
+            bool all_clear{true};
+            PiecePtr dum = factory(PT_PAWN, &board(), color());
+            for( auto file : ci.open_file ) {
+                dum->set_square(Square(square().rank(), file));
+                if( get_attackers( dum ).size() != 0 ) {
+                    all_clear = false;
+                    break;
+                }
+            }
+            if ( all_clear )
+                moves.push_back(Move( ci.ma, square(), rook->square()));
+        };
+    }
 }
 bool King::can_attack( Square dst ) const {
     return can_omni_attack(dst);
 }
 MoveAction King::move(const Move move) {
     PiecePtr trg = board().at(move.dst);
+    Color    cc  = (Color)is_black(); //WHITE=0,BLACK=1
     if (move.action == MV_CASTLE_KINGSIDE || move.action == MV_CASTLE_QUEENSIDE ) {
-        Color      cc = (Color)is_black(); //WHITE=0,BLACK=1
         CastleSide cs = (move.action == MV_CASTLE_KINGSIDE) 
                        ? KINGSIDE 
                        : QUEENSIDE;
@@ -237,11 +302,18 @@ MoveAction King::move(const Move move) {
 
         board().set(Square(square().rank(),      king), ptr());
         board().set(Square(trg->square().rank(), rook), trg);
-        board().set_castle_right(cc, cs, false);
+        board().set_castle_right(cc, KINGSIDE,  false);
+        board().set_castle_right(cc, QUEENSIDE, false);
 
+        set_moved();
+        trg->set_moved();
         return move.action;
-    } 
-    return Piece::move(move);
+    }
+    auto ret = Piece::move(move);
+    // 8A3a - Castling is illegal if king moves
+    board().set_castle_right(cc, KINGSIDE,  false);
+    board().set_castle_right(cc, QUEENSIDE, false);
+    return ret;
 }
 
 Queen::Queen(Color c, Board* b)
@@ -305,7 +377,14 @@ void Rook::get_moves( MoveList& moves ) const {
 bool Rook::can_attack( Square dst ) const {
     return can_axes_attack(dst);
 }
-
+MoveAction Rook::move(const Move move) {
+    if ( !has_moved() ) {
+        // 8A3b - Castling illegal if rook moves
+        CastleSide cs = ( square().file() == Fa) ? QUEENSIDE : KINGSIDE;
+        board().set_castle_right(color(), cs, false);
+    }
+    return Piece::move(move);
+}
 
 Pawn::Pawn(Color c, Board* b)
 : Piece(PT_PAWN, b, c)
@@ -387,18 +466,20 @@ bool Pawn::can_attack( Square dst ) const {
 
 MoveAction Pawn::move(const Move move) {
     if ( move.action == MV_EN_PASSANT ) {
+        // 8F5 Capturing en passant
         PiecePtr capt = board().at(move.org.rank(), move.dst.file());
         if ( capt->is_empty() )
             return MV_NONE;
         board().remove(capt);
         return Piece::move(move);
     } else if ( move.action == MV_MOVE_PAWN ) {
-        // standard move - but pawn can move 1 or 2 spaces.
+        // 8F2 pawn can move 1 or 2 spaces.
         // if 2 spaces set en passant square
         Piece::move(move);
         if ( move.org.rank_distance(move.dst) == 2 )
             board().set_en_passant(move.dst);
     } else {
+        // 8F6 Pawn Promotion
         Piece::move(move);
         PieceType pt(PT_NONE);
         switch(move.action) {

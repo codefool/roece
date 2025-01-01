@@ -135,6 +135,25 @@ struct Move {
     friend std::ostream& operator<<(std::ostream& os, const Move& move);
 };
 
+#pragma pack(1)
+// MovePacked
+//
+// xxxx .... .... .... MoveAction
+// .... xxxx xx.. .... Origin Square (0..63)
+// .... .... ..xx xxxx Destination Square (0..63)
+// 
+union MovePacked {
+    uint16_t w;
+    struct {
+        uint16_t ma:4;
+        uint16_t org:6;
+        uint16_t dst:6;
+    } b;
+    MovePacked();
+    MovePacked(const Move& m);
+};
+#pragma pack()
+
 struct MovePosition {
     Move move;
     // Position pos;

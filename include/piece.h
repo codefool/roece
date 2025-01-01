@@ -9,6 +9,7 @@ private:
     char      _g;
     Square    _s;
     Board*    _b;
+    bool      _m;
 
 protected:
     Piece();
@@ -23,6 +24,8 @@ public:
     const byte      range()  const;
     const uint8_t   toByte() const;
 
+    const bool has_moved() const;
+    const bool is_type(PieceType pt) const;
     const bool is_empty()  const;
     const bool is_knight() const;
     const bool is_white()  const;
@@ -37,13 +40,14 @@ public:
     void set_square(Square squ);
     void set_glyph();
     void set_board(Board* brd);
+    void set_moved(bool state=true);
 
     virtual const DirList& get_dirs() const;
     virtual MoveAction move( const Move move );
     virtual void get_moves( MoveList& moves) const = 0;
     virtual bool can_attack( Square dst ) const = 0;
     
-    PieceList get_attackers(PiecePtr trg);
+    PieceList get_attackers(const PiecePtr& trg) const;
 
     friend std::ostream& operator<<(std::ostream& os, const Piece& p);
 
@@ -118,6 +122,7 @@ public:
     virtual const DirList& get_dirs() const;
     virtual void get_moves( MoveList& moves ) const;
     virtual bool can_attack( Square dst ) const;
+    MoveAction move(const Move move);
 };
 
 class Pawn : public Piece {
