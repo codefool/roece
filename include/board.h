@@ -4,19 +4,16 @@
 
 class Board {
 public:
-    std::map<Square, PiecePtr> _pm;
+    PiecePtrMap _pm;
 private:
-    Color                      _on_move;
-    byte                       _castle_rights;
-    Square                     _en_passant;
-    short                      _half_move_clock;
-    short                      _full_move_cnt;
+    BoardState  _bs;
 
 public:
     Board(const char *fen = EMPTY_BOARD);
     Board(const PositionPacked& pp);
     Board(const Board& other);
     void init(const PositionPacked& pp);
+    void set_board_state(const BoardState& bs);
     Color get_on_move() const;
     void set_on_move(Color s);
     void toggle_on_move();
@@ -27,7 +24,7 @@ public:
     bool get_castle_right( Color c, CastleSide s) const;
     void set_castle_right( byte bit, bool state );
     void set_castle_right( Color c, CastleSide s, bool state);
-    byte get_all_castle_rights() const { return _castle_rights; }
+    byte get_all_castle_rights() const { return _bs._castle_rights; }
     std::string get_castle_rights_string() const;
     bool has_en_passant() const;
     Square get_en_passant() const;
@@ -41,9 +38,11 @@ public:
     void set_full_move_count( short val );
     void clear_full_move_count();
     void inc_full_move_count();
+    const BoardState& get_board_state() const;
 
     Board deep_copy() const;
-    MoveAction apply_move(const Move& move );
+    MoveResult apply_move(const Move& move );
+    void revert_move(const MoveResult& res);
 
     SeekResult seek( Color side, Square src, Dir dir, short range );
     PiecePtr at(Square squ) const;

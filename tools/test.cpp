@@ -160,7 +160,7 @@ void thread_proc(int idx) {
             // std::cout << b.fen() << std::endl;
             for ( auto mv : ml ) {
                 Board c(pp);
-                MoveAction ma = c.apply_move(mv);
+                MoveResult mr = c.apply_move(mv);
                 PositionPacked p0 = c.pack();
                 uint64_t zob_p0 = c.zobristHash();
                 if ( e.add(mv, zob_p0) == 36 ) {
@@ -168,7 +168,7 @@ void thread_proc(int idx) {
                     e.clear();
                 }
                 // std::cout << c.diagram() << std::endl << c.fen() << std::endl;
-                if ( mv.resultsInRootPosition(ma) ) {
+                if ( mv.resultsInRootPosition(mr.action) ) {
                     DHTPtr& roots = all_roots.get(p0);
                     if ( roots->search(p0) ) {
                         switch(b.get_on_move()) {
@@ -210,8 +210,15 @@ int main() {
     // Board b(false);
     // b.from_fen("1nrN4/2P5/8/8/4Pp2/8/2p5/1NRn4 w - e4 0 1");
     // Board b("rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1");
-    Board b("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+    // Board b("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
     // Board b(INITIAL_POSITION);
+    Board b("8/8/8/8/8/8/8/R3K3 w - - 0 1");
+    std::cout << b.diagram() << std::endl;
+    auto res = b.apply_move(Move(MV_CASTLE_QUEENSIDE, Square(R1,Fe), Square(R1,Fa)));
+    std::cout << b.diagram() << std::endl;
+    b.revert_move(res);
+    std::cout << b.diagram() << std::endl;
+
     PositionPacked pp = b.pack();
     PositionPacked pi(pp);
     QueueEntry qe { pp, Move(), pp };

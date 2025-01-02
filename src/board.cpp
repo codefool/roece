@@ -2,6 +2,39 @@
 #include "iomanip"
 #include "util.h"
 
+MoveResult::MoveResult()
+{}
+MoveResult::MoveResult(PiecePtr s, PiecePtr t, Board* b) 
+: action{MV_NONE}
+, src{Piece::factory(s->type(), b, s->color())}
+, trg{Piece::factory(t->type(), b, t->color())}
+, bs {b->get_board_state()}
+{
+    src->set_square(s->square());
+    trg->set_square(t->square());
+}
+
+BoardState::BoardState()
+{}
+
+BoardState::BoardState(const BoardState& other)
+: _on_move        {other._on_move}
+, _castle_rights  {other._castle_rights}
+, _en_passant     {other._en_passant}
+, _half_move_clock{other._half_move_clock}
+, _full_move_cnt  {other._full_move_cnt}
+{}
+
+BoardState& BoardState::operator=(const BoardState& other) {
+    memcpy(this, &other, sizeof(BoardState));
+    // _on_move        = other._on_move;
+    // _castle_rights  = other._castle_rights;
+    // _en_passant     = other._en_passant;
+    // _half_move_clock= other._half_move_clock;
+    // _full_move_cnt  = other._full_move_cnt;
+    return *this;
+}
+
 std::vector<std::string> split(std::string target, std::string delimiter);
 
 Board::Board(const char *fen) {
@@ -16,13 +49,9 @@ Board::Board(const PositionPacked& pp) {
     unpack(pp,*this);
 }
 
-Board::Board(const Board& other) {
-    set_on_move( other.get_on_move() );
-    set_en_passant( other.get_en_passant() );
-    set_half_move_clock( other.get_half_move_clock() );
-    set_full_move_count( other.get_full_move_count() );
-    for ( short idx(0); idx < 4; ++idx ) 
-        set_castle_right( idx, other.get_castle_right(idx) );
+Board::Board(const Board& other) 
+: _bs{other._bs}
+{
     for ( auto entry : other._pm ) {
         const Square squ( entry.first );
         PiecePtr     o_ptr( entry.second );
@@ -32,44 +61,77 @@ Board::Board(const Board& other) {
     }
 }
 
-MoveAction Board::apply_move(const Move& move) {
+void Board::set_board_state(const BoardState& bs) {
+    _bs = bs;
+}
+
+const BoardState& Board::get_board_state() const {
+    return _bs;
+}
+
+MoveResult Board::apply_move(const Move& move) {
     PiecePtr src = at(move.org);
-    Square   eps = get_en_passant();
+    PiecePtr trg = at(move.dst);
+    MoveResult ret(src, trg, this);
     if ( src->is_empty() )
-        return MV_NONE;
-    MoveAction ret = src->move(move);
+        return ret;
+    ret.action = src->move(move);
+    ret.squSrc = src->square();
+    ret.squTrg = trg->square();
     inc_half_move_clock();
     if (src->is_black())
         inc_full_move_count();
-    // clear en passant if en passant was not set this move
-    if ( get_en_passant() == eps )
+    // clear en passant if en passant was not updated this move
+    if ( get_en_passant() == ret.bs._en_passant )
         clear_en_passant();
     toggle_on_move();
     return ret;
 }
 
+// reverting a move seems harder than it appears. They way that a board
+// is represented by a map of occupied squares, as opposed to keeping a
+// full 8x8 array of pieces. Squares which are not in the map are EMPTY.
+// So, if a piece is moved, it is simply moved in the map from one square
+// to another. To put it back, just the map needs to be adjusted. In 
+// actions where another piece is involved - capture or castling - then
+// the second square is also adjusted by putting the piece back.
+void Board::revert_move(const MoveResult& res) {
+    set_board_state(res.bs);
+    set(res.src->square(), res.src);
+    if ( res.trg->is_empty() )
+        remove(res.trg);
+    else
+        set(res.trg->square(), res.trg);
+    if ( res.action == MV_CASTLE_KINGSIDE || res.action == MV_CASTLE_QUEENSIDE ) {
+        if ( res.src->square() != res.squSrc )
+            remove( at(res.squSrc) );
+        if ( res.trg->square() != res.squTrg )
+            remove( at(res.squTrg) );
+    }
+}
+
 Color Board::get_on_move() const {
-    return _on_move;
+    return _bs._on_move;
 }
 
 void Board::set_on_move(Color c) {
-    _on_move = c;
+    _bs._on_move = c;
 }
 
 void Board::toggle_on_move() {
-    set_on_move((_on_move == WHITE)?BLACK:WHITE);
+    set_on_move((_bs._on_move == WHITE)?BLACK:WHITE);
 }
 
 bool Board::none_can_castle() const {
-    return (_castle_rights & 0x0f) == 0;
+    return (_bs._castle_rights & 0x0f) == 0;
 }
 
 void Board::clear_castle_rights() {
-    _castle_rights = 0;
+    _bs._castle_rights = 0;
 }
 
 bool Board::get_castle_right( byte bit ) const {
-    return (_castle_rights & bit) != 0;
+    return (_bs._castle_rights & bit) != 0;
 }
 
 std::string Board::get_castle_rights_string() const {
@@ -112,9 +174,9 @@ bool Board::get_castle_right( Color c, CastleSide s ) const {
 
 void Board::set_castle_right( byte bit, bool state ) {
     if (state) {
-        _castle_rights |= bit;
+        _bs._castle_rights |= bit;
     } else {
-        _castle_rights &= ~bit;
+        _bs._castle_rights &= ~bit;
     }
 }
 
@@ -123,51 +185,51 @@ void Board::set_castle_right( Color c, CastleSide s, bool state ) {
 }
 
 bool Board::has_en_passant() const {
-    return _en_passant != Square::UNBOUNDED;
+    return _bs._en_passant != Square::UNBOUNDED;
 }
 
 Square Board::get_en_passant() const {
-    return _en_passant;
+    return _bs._en_passant;
 }
 
 void Board::clear_en_passant() {
-    _en_passant = Square::UNBOUNDED;
+    _bs._en_passant = Square::UNBOUNDED;
 }
 
 void Board::set_en_passant( Square squ ) {
-    _en_passant = squ.file();
+    _bs._en_passant = squ.file();
 }
 
 short Board::get_half_move_clock() const {
-    return _half_move_clock;
+    return _bs._half_move_clock;
 }
 
 void Board::set_half_move_clock( short val ) {
-    _half_move_clock = val;
+    _bs._half_move_clock = val;
 }
 
 void Board::clear_half_move_clock() {
-    _half_move_clock = 0;
+    _bs._half_move_clock = 0;
 }
 
 void Board::inc_half_move_clock() {
-    ++_half_move_clock;
+    ++_bs._half_move_clock;
 }
 
 short Board::get_full_move_count() const {
-    return _full_move_cnt;
+    return _bs._full_move_cnt;
 }
 
 void Board::set_full_move_count( short val ) {
-    _full_move_cnt = val;
+    _bs._full_move_cnt = val;
 }
 
 void Board::clear_full_move_count() {
-    _full_move_cnt = 0;
+    _bs._full_move_cnt = 0;
 }
 
 void Board::inc_full_move_count() {
-    _full_move_cnt++;
+    _bs._full_move_cnt++;
 }
 
 SeekResult Board::seek( Color side, Square src, Dir dir, short range ) {
@@ -436,11 +498,11 @@ std::string Board::diagram() {
             ss << pt->glyph() << ' ';
         }
         switch( r ) {
-            case R8: ss << " ep:" << _en_passant;                break;
+            case R8: ss << " ep:" << _bs._en_passant;            break;
             case R7: ss << " cr:" << get_castle_rights_string(); break;
-            case R6: ss << " om:" << ((_on_move)?"b":"w");       break;
-            case R5: ss << " hm:" << _half_move_clock;           break;
-            case R4: ss << " fm:" << _full_move_cnt;             break;
+            case R6: ss << " om:" << ((_bs._on_move)?"b":"w");   break;
+            case R5: ss << " hm:" << _bs._half_move_clock;       break;
+            case R4: ss << " fm:" << _bs._full_move_cnt;         break;
             case R3:
             case R2:
             case R1:
@@ -467,7 +529,7 @@ PositionPacked Board::pack() const {
     ret.gi.f.castle_right_white_queenside = get_castle_right(WHITE, QUEENSIDE);
     ret.gi.f.castle_right_black_kingside  = get_castle_right(BLACK, KINGSIDE );
     ret.gi.f.castle_right_black_queenside = get_castle_right(BLACK, QUEENSIDE);
-    ret.gi.f.on_move         = _on_move;
+    ret.gi.f.on_move         = get_on_move();
     ret.gi.f.piece_cnt       = _pm.size();
     ret.gi.f.half_move_clock = get_half_move_clock();
     ret.gi.f.full_move_cnt   = get_full_move_count();

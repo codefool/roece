@@ -239,11 +239,11 @@ void King::get_moves( MoveList& moves ) const {
         //  queen   a          cde
         //  king    h          efg
         struct {
-            Dir        d;            // dir to scan from king to rook
-            short      r;            // # of squares that must be clear
-            File       rook_file;    // where the rook should be
-            MoveAction ma;           // resulting move action
-            File       open_file[3]; // files that cannot be under attack
+            Dir        d;             // dir to scan from king to rook
+            short      r;             // # of squares that must be clear
+            File       rook_file;     // where the rook should be
+            MoveAction ma;            // resulting move action
+            File       clear_file[3]; // files that cannot be under attack
         } castle_info[2] = {
             {LFT, 3, Fh, MV_CASTLE_KINGSIDE , {Fe,Ff,Fg}},
             {RGT, 4, Fa, MV_CASTLE_QUEENSIDE, {Fc,Fd,Fe}},
@@ -272,7 +272,7 @@ void King::get_moves( MoveList& moves ) const {
             //      over can be under attack.
             bool all_clear{true};
             PiecePtr dum = factory(PT_PAWN, &board(), color());
-            for( auto file : ci.open_file ) {
+            for( auto file : ci.clear_file ) {
                 dum->set_square(Square(square().rank(), file));
                 if( get_attackers( dum ).size() != 0 ) {
                     all_clear = false;

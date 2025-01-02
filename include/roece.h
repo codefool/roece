@@ -63,8 +63,12 @@ enum MoveAction : uint8_t {
 	MV_CAP_PROM_KNIGHT  = 0x0d,     // 1101 promotion ""    ""      "" knight
 	MV_CAP_PROM_ROOK    = 0x0e,     // 1110 promotion ""    ""      "" rook
     //
-    MV_FAIL_NOT_ON_MOVE,            // moving piece is not on move
-    MV_FAIL_BLOCKED                 // move is blocked by friendly piece
+    // failure conditions
+    //
+    MV_FAIL_NOT_ON_MOVE = 0x80,     // moving piece is not on move
+    MV_FAIL_BLOCKED,                // move is blocked by friendly piece
+    MV_FAIL_NOT_CHECK_RESPONSE,     // move is not a response to king in check (12C)
+    MV_FAIL_CAUSES_CHECK,           // move would place king in check (12E)
 };
 
 // Castle Rights 
@@ -87,19 +91,20 @@ enum File : byte { Fa=0, Fb, Fc, Fd, Fe, Ff, Fg, Fh };
 
 #define rank_glyph(r) ((char)('1'+r))
 #define file_glyph(f) ((char)('a'+f))
+#define ORD(r,f) (uint8_t)((r << 3) | f);
 
 class Piece;
 class Board;
 class Move;
 class Square;
 
-typedef std::shared_ptr<Piece>    PiecePtr;
-typedef std::vector<PiecePtr>     PieceList;
-typedef std::vector<Square>       SquareList;
-typedef std::map<Square,PiecePtr> PiecePtrMap;
-typedef std::pair<byte, byte>     Offset;
-typedef std::vector<Dir>          DirList;
-typedef std::vector<Move>         MoveList;
+typedef std::shared_ptr<Piece>     PiecePtr;
+typedef std::vector<PiecePtr>      PieceList;
+typedef std::vector<Square>        SquareList;
+typedef std::map<Square,PiecePtr>  PiecePtrMap;
+typedef std::pair<byte, byte>      Offset;
+typedef std::vector<Dir>           DirList;
+typedef std::vector<Move>          MoveList;
 
 extern const Offset offs[];
 
@@ -121,6 +126,33 @@ struct SeekResult {
 };
 
 #include "square.h"
+
+struct BoardState {
+    Color       _on_move;
+    byte        _castle_rights;
+    Square      _en_passant;
+    short       _half_move_clock;
+    short       _full_move_cnt;
+
+    BoardState();
+    BoardState(const BoardState& other);
+    BoardState& operator=(const BoardState& other);
+};
+
+// The MoveResult reports the result of apply a move to a baord.
+// The src/trg/bs records the state of the affected piece(s) 
+// and the board state before the move to make it easier to back
+// out.
+struct MoveResult {
+    MoveAction action;  // result of the move
+    PiecePtr   src;     // piece being moved
+    PiecePtr   trg;     // optional affected piece (capture)
+    BoardState bs;      // board state 
+    Square     squSrc;  // where source ended up
+    Square     squTrg;  // where traget ended up
+    MoveResult();
+    MoveResult(PiecePtr src, PiecePtr trg, Board* b);
+};
 
 struct Move {
     MoveAction action;
