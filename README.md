@@ -82,7 +82,7 @@ p' --> move | p  --> p
 FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 | Stat | Metric |
-| ---- | ------ |
+| ---- | -----: |
 | Maximum Moves in a position      |          34|
 | Minimum                          |          16|
 | Legal moves in this position     | 145'937'007|
