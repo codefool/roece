@@ -17,15 +17,13 @@ extern const char *INITIAL_POSITION;
 typedef signed char byte;
 
 enum PieceType : uint8_t {
-    PT_EMPTY    = 0x00,
+    PT_NONE     = 0x00,
     PT_KING     = 0x01,
     PT_QUEEN    = 0x02,
     PT_BISHOP   = 0x03,
     PT_KNIGHT   = 0x04,
     PT_ROOK     = 0x05,
-    PT_PAWN     = 0x06,
-    // PT_PAWN_OFF = 0x07,
-    PT_NONE     = 0x80
+    PT_PAWN     = 0x06
 };
 
 extern const char *PieceName[];
@@ -34,9 +32,12 @@ extern const char *PieceName[];
 #define BLACK_MASK 0x08
 #define PIECE_MASK 0x07
 
-enum Dir { 
+enum Dir {
+    // compass moves
     UP,   DN,   LFT,  RGT,  UPR,  UPL,  DNR,  DNL,
-    KLUP, KUPL, KUPR, KRUP, KRDN, KDNR, KDNL, KLDN,
+    // knight moves
+    NLUP, NUPL, NUPR, NRUP, NRDN, NDNR, NDNL, NLDN,
+    // no move at all
     NOWHERE
 };
 
@@ -83,7 +84,7 @@ enum CastleRight:uint8_t {
     CASTLE_RIGHT_BLACK_QUEENSIDE = 0x08
 };
 
-enum Color       : byte { WHITE = 0,    BLACK, NONE };
+enum Color       : byte { WHITE = 0,    BLACK, DRAB };
 enum CastleSide  : byte { KINGSIDE = 0, QUEENSIDE   };
 
 enum Rank : byte { R1=0, R2, R3, R4, R5, R6, R7, R8 };
@@ -91,7 +92,6 @@ enum File : byte { Fa=0, Fb, Fc, Fd, Fe, Ff, Fg, Fh };
 
 #define rank_glyph(r) ((char)('1'+r))
 #define file_glyph(f) ((char)('a'+f))
-#define ORD(r,f) (uint8_t)((r << 3) | f);
 
 class Piece;
 class Board;

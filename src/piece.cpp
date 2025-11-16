@@ -2,7 +2,10 @@
 #include "roece.h"
 
 Piece::Piece()
-: _t(PT_NONE), _b(nullptr), _c(NONE), _s(Square::UNBOUNDED)
+: _t(PT_NONE)
+, _b(nullptr)
+, _c(DRAB)
+, _s(Square::OUT_OF_BOUNDS)
 {}
 King::King() : Piece()
 {}
@@ -18,7 +21,10 @@ Pawn::Pawn() : Piece()
 {}
 
 Piece::Piece( PieceType pt, Board* b, Color c )
-: _t(pt), _b(b), _c(c), _s(Square::UNBOUNDED)
+: _t(pt)
+, _b(b)
+, _c(c)
+, _s(Square::OUT_OF_BOUNDS)
 {
     set_glyph();
 }
@@ -41,7 +47,7 @@ const uint8_t   Piece::toByte() const {
 }
 const bool Piece::has_moved() const { return _m; }
 const bool Piece::is_type(PieceType pt) const { return _t == pt; }
-const bool Piece::is_empty()  const { return is_type(PT_EMPTY); }
+const bool Piece::is_empty()  const { return is_type(PT_NONE); }
 const bool Piece::is_knight() const { return is_type(PT_KNIGHT); }
 const bool Piece::is_white()  const { return !_c; }
 const bool Piece::is_black()  const { return  _c; }
@@ -205,7 +211,7 @@ PiecePtr Piece::Piece::fromByte(uint8_t b) {
 
 
 Empty::Empty()
-: Piece( PT_EMPTY, nullptr, NONE )
+: Piece( PT_NONE, nullptr, DRAB )
 {}
 
 bool Empty::can_attack( Square dst ) const {
@@ -215,14 +221,14 @@ void Empty::get_moves( MoveList& moves ) const {
 }
 
 // the common piece that occupies every empty square.
-// its color is NONE
+// its color is DRAB
 PiecePtr Piece::EMPTY = std::make_shared<Empty>();
 
 const char *Piece::glyphs=".KQBNRPP";
 // range by PieceType ordinal
 // This is the max number of squares a piece can move
-//                             E K Q B N R P P
-const byte Piece::ranges[8] = {1,1,7,7,1,7,0,0};
+//                             E K Q B N R P
+const byte Piece::ranges[7] = {1,1,7,7,1,7,0};
 
 King::King(Color c, Board* b)
 : Piece(PT_KING, b, c)
@@ -257,7 +263,7 @@ void King::get_moves( MoveList& moves ) const {
             // and rook has not moved                                (8A3b)  
             // and the squares between the rook and king are empty   (8A4b)
             // and the intervening squares are not under attack.     (8A4a)
-            if ( !board().get_castle_right(color(), side) )
+            if ( !board().has_castle_right(color(), side) )
                 continue;
 
             PiecePtr rook = board().at(square().rank(), ci.rook_file);    // rook?

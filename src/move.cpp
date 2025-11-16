@@ -19,12 +19,14 @@ bool Move::resultsInRootPosition(MoveAction ma) {
         // pawn moves
         case MV_MOVE_PAWN:
         case MV_EN_PASSANT:
+        // pawn promotions
         case MV_PROM_QUEEN:
         case MV_PROM_BISHOP:
         case MV_PROM_KNIGHT:
         case MV_PROM_ROOK:
         // piece captures
         case MV_CAPTURE:
+        // piece capture with promotion
         case MV_CAP_PROM_QUEEN:
         case MV_CAP_PROM_BISHOP:
         case MV_CAP_PROM_KNIGHT:

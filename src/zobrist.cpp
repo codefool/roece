@@ -1,6 +1,7 @@
 #include "roece.h"
 
-// A list of random numbers with hamming distance of at least 1
+// A list of random 64-bit numbers with a hamming distance of at least 1
+// sides x piece types x squares
 const std::uint64_t pieces_rn[2][6][64] = {
     // white king
     {
@@ -122,9 +123,9 @@ const std::uint64_t en_passant_rn[8] = {
 };
 
 // castle rights
-const std::uint64_t castle_rights_rn[16] = {
-    0x931195e8d6ae0cc0ull, 0xa5616c48d4e934d5ull, 0xc438223a93dbaae1ull, 0xfcc285fc0790aa1full, 0x83784d8b6526b2adull, 0x310430a4d6dd0330ull, 0xa5bb4d9ce56b7c96ull, 0x76cef491aee42a6cull, 
-    0xf86dd0d4874e50d7ull, 0xc7c4886360f92775ull, 0xccd98718bf8656c6ull, 0x06c9b15722ffd332ull, 0x5c33fc7588bebc61ull, 0xb45c99622951ee6full, 0xdd66103eca171322ull, 0x190f5728a8a32c71ull, 
+const std::uint64_t castle_rights_rn[4] = {
+    // white kingside      white queenside        black kingside         black queenside
+    0x931195e8d6ae0cc0ull, 0xa5616c48d4e934d5ull, 0xc438223a93dbaae1ull, 0xfcc285fc0790aa1full
 };
 
 // on-move is black
@@ -137,11 +138,14 @@ std::uint64_t Board::zobristHash() const {
             PiecePtr ptr = at(rank,file);
             if ( !ptr->is_empty() ) {
                 int typ = ptr->type() - 1;          // 0-5
-                // if (ptr->type() == PT_PAWN_OFF)
-                //     --typ;
                 zob ^= pieces_rn[ptr->color()][typ][ptr->square().ordinal()];
             }
         }
+    }
+
+    for (byte bit = 0; bit < 4; ++bit) {
+        if ( has_castle_right( bit ) )
+            zob ^= castle_rights_rn[bit];
     }
 
     zob ^= castle_rights_rn[get_all_castle_rights()];

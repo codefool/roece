@@ -13,7 +13,7 @@ private:
 
 protected:
     Piece();
-    Piece( PieceType pt, Board *b, Color s = NONE );
+    Piece( PieceType pt, Board *b, Color s = DRAB );
 
 public:
           Board&    board()  const;
@@ -61,11 +61,11 @@ protected:
     void get_dirs_moves( const DirList& dirs, MoveList& moves ) const;
 
 public:
-    static PiecePtr factory(PieceType pt, Board* b, Color s = NONE );
+    static PiecePtr factory(PieceType pt, Board* b, Color s = DRAB );
     static PiecePtr fromByte(uint8_t b);
     static PiecePtr EMPTY;
     static const char *glyphs;
-    static const byte ranges[8];
+    static const byte ranges[7];
 };
 
 class King : public std::enable_shared_from_this<King>, public Piece {

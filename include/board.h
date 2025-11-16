@@ -19,9 +19,8 @@ public:
     void toggle_on_move();
     bool none_can_castle() const;
     void clear_castle_rights();
-    byte castle_bit(Color c, CastleSide s ) const;
-    bool get_castle_right( byte bit ) const;
-    bool get_castle_right( Color c, CastleSide s) const;
+    bool has_castle_right( byte bit ) const;
+    bool has_castle_right( Color c, CastleSide s) const;
     void set_castle_right( byte bit, bool state );
     void set_castle_right( Color c, CastleSide s, bool state);
     byte get_all_castle_rights() const { return _bs._castle_rights; }

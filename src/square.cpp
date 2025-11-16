@@ -1,8 +1,5 @@
 #include "roece.h"
 
-Square::Square()
-{}
-
 Square::Square( byte rank, byte file )
 : pair(rank,file)
 {}
@@ -46,7 +43,7 @@ bool Square::in_bounds() const {
 }
 
 bool Square::is_unbounded() const {
-    return *this == UNBOUNDED;
+    return *this == OUT_OF_BOUNDS;
 }
 
 Square Square::operator+=( const Offset& rhs ) {
@@ -59,10 +56,10 @@ Square Square::operator+( const Offset& rhs ) const {
     return Square( first + rhs.first, second + rhs.second );
 }
 
-Square Square::UNBOUNDED(-1, -1);
+Square Square::OUT_OF_BOUNDS(-1, -1);
 
 std::ostream& operator<<(std::ostream& os, const Square& squ) {
-    if ( squ == Square::UNBOUNDED ) {
+    if ( squ == Square::OUT_OF_BOUNDS ) {
         os << "--";
     } else {
         os << file_glyph(squ.file()) << rank_glyph(squ.rank());

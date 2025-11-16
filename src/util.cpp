@@ -25,7 +25,18 @@ void unpack_array(uint8_t* in, uint8_t* out, size_t s)
     uint8_t *q = out;
     for( ; s; s -= 2 )
     {
-        *q++ = ((*p   & 0xf0 ) >> 4);
-        *q++ = ( *p++ & 0x0f );
+        *q++ = ((*p >> 4) & 0x0f );// high nibble
+        *q++ = ( *p++     & 0x0f );// low nibble
     }
+}
+
+// hacker's delight (2nd ed) Fig 5-2
+int bitpop64(std::uint64_t x) {
+    x =  x - ((x >> 1) & 0x5555555555555555ull);
+    x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
+    x = (x + (x >>  4)) & 0x0f0f0f0f0f0f0f0full;
+    x =  x + (x >>  8);
+    x =  x + (x >> 16);
+    x =  x + (x >> 32);
+    return (int)(x & 0x000000000000003Full);
 }

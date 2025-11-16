@@ -7,11 +7,13 @@ MoveResult::MoveResult()
 MoveResult::MoveResult(PiecePtr s, PiecePtr t, Board* b) 
 : action{MV_NONE}
 , src{Piece::factory(s->type(), b, s->color())}
-, trg{Piece::factory(t->type(), b, t->color())}
 , bs {b->get_board_state()}
 {
     src->set_square(s->square());
-    trg->set_square(t->square());
+    if ( !t->is_empty() ) {
+        trg = Piece::factory(t->type(), b, t->color());
+        trg->set_square(t->square());
+    }
 }
 
 BoardState::BoardState()
@@ -98,10 +100,12 @@ MoveResult Board::apply_move(const Move& move) {
 void Board::revert_move(const MoveResult& res) {
     set_board_state(res.bs);
     set(res.src->square(), res.src);
-    if ( res.trg->is_empty() )
-        remove(res.trg);
-    else
-        set(res.trg->square(), res.trg);
+    if ( res.trg != nullptr ) {
+        if ( res.trg->is_empty() )
+            remove(res.trg);
+        else
+            set(res.trg->square(), res.trg);
+    }
     if ( res.action == MV_CASTLE_KINGSIDE || res.action == MV_CASTLE_QUEENSIDE ) {
         if ( res.src->square() != res.squSrc )
             remove( at(res.squSrc) );
@@ -130,24 +134,6 @@ void Board::clear_castle_rights() {
     _bs._castle_rights = 0;
 }
 
-bool Board::get_castle_right( byte bit ) const {
-    return (_bs._castle_rights & bit) != 0;
-}
-
-std::string Board::get_castle_rights_string() const {
-    std::stringstream ss;
-    if ( none_can_castle() ) {
-        ss << '-';
-    } else {
-        if ( get_castle_right( WHITE, KINGSIDE  ) ) ss << 'K';
-        if ( get_castle_right( WHITE, QUEENSIDE ) ) ss << 'Q';
-        if ( get_castle_right( BLACK, KINGSIDE  ) ) ss << 'k';
-        if ( get_castle_right( BLACK, QUEENSIDE ) ) ss << 'q';
-    }
-    return ss.str();
-}
-
-
 // convert color and side attributes to an ordinal bit position
 //        white  black
 // king    0001   0010   2^0 2^1 s^2 2^3
@@ -156,20 +142,31 @@ std::string Board::get_castle_rights_string() const {
 // color : white=0, black=1
 // side  : king=0, queen=1
 //
-// ((color < 1) + side) gives the series {0,1,2,3}
+// ((color << 1) + side) gives the series {0,1,2,3}
 // and 1 << ((color < 1) + side) gives series (1,2,4,8)
 //
-byte Board::castle_bit(Color c, CastleSide s ) const {
-    // return (c == CASTLE_WHITE) 
-    //        ? (s == CASTLE_KINGSIDE)
-    //          ? CASTLE_RIGHT_WHITE_KINGSIDE : CASTLE_RIGHT_WHITE_QUEENSIDE
-    //        : (s == CASTLE_KINGSIDE)
-    //          ? CASTLE_RIGHT_BLACK_KINGSIDE : CASTLE_RIGHT_BLACK_QUEENSIDE;
-    return (1 << ((c << 1) + s)) & 0x0f;
+#define CASTLE_RIGHT_ORD(c,s) (byte)((c << 1) + s)
+#define CASTLE_BIT(c, s) (byte)(1 << CASTLE_RIGHT_ORD(c, s) & 0x0f)
+
+bool Board::has_castle_right( byte bit ) const {
+    return (_bs._castle_rights & bit) != 0;
 }
 
-bool Board::get_castle_right( Color c, CastleSide s ) const {
-    return get_castle_right( castle_bit(c, s) );
+bool Board::has_castle_right( Color c, CastleSide s ) const {
+    return has_castle_right( CASTLE_RIGHT_ORD(c, s) );
+}
+
+std::string Board::get_castle_rights_string() const {
+    std::stringstream ss;
+    if ( none_can_castle() ) {
+        ss << '-';
+    } else {
+        if ( has_castle_right( WHITE, KINGSIDE  ) ) ss << 'K';
+        if ( has_castle_right( WHITE, QUEENSIDE ) ) ss << 'Q';
+        if ( has_castle_right( BLACK, KINGSIDE  ) ) ss << 'k';
+        if ( has_castle_right( BLACK, QUEENSIDE ) ) ss << 'q';
+    }
+    return ss.str();
 }
 
 void Board::set_castle_right( byte bit, bool state ) {
@@ -181,11 +178,11 @@ void Board::set_castle_right( byte bit, bool state ) {
 }
 
 void Board::set_castle_right( Color c, CastleSide s, bool state ) {
-    set_castle_right( castle_bit(c, s), state );
+    set_castle_right( CASTLE_BIT(c, s), state );
 }
 
 bool Board::has_en_passant() const {
-    return _bs._en_passant != Square::UNBOUNDED;
+    return _bs._en_passant != Square::OUT_OF_BOUNDS;
 }
 
 Square Board::get_en_passant() const {
@@ -193,7 +190,7 @@ Square Board::get_en_passant() const {
 }
 
 void Board::clear_en_passant() {
-    _bs._en_passant = Square::UNBOUNDED;
+    _bs._en_passant = Square::OUT_OF_BOUNDS;
 }
 
 void Board::set_en_passant( Square squ ) {
@@ -525,10 +522,10 @@ void Board::get_moves(MoveList& moves) {
 
 PositionPacked Board::pack() const {
     PositionPacked ret;
-    ret.gi.f.castle_right_white_kingside  = get_castle_right(WHITE, KINGSIDE );
-    ret.gi.f.castle_right_white_queenside = get_castle_right(WHITE, QUEENSIDE);
-    ret.gi.f.castle_right_black_kingside  = get_castle_right(BLACK, KINGSIDE );
-    ret.gi.f.castle_right_black_queenside = get_castle_right(BLACK, QUEENSIDE);
+    ret.gi.f.castle_right_white_kingside  = has_castle_right(WHITE, KINGSIDE );
+    ret.gi.f.castle_right_white_queenside = has_castle_right(WHITE, QUEENSIDE);
+    ret.gi.f.castle_right_black_kingside  = has_castle_right(BLACK, KINGSIDE );
+    ret.gi.f.castle_right_black_queenside = has_castle_right(BLACK, QUEENSIDE);
     ret.gi.f.on_move         = get_on_move();
     ret.gi.f.piece_cnt       = _pm.size();
     ret.gi.f.half_move_clock = get_half_move_clock();
@@ -538,12 +535,12 @@ PositionPacked Board::pack() const {
                              : NO_EN_PASSANT;
 
     // the Board piece map is keyed by ordinal [0..63], and being
-    // and ordered collection guaranteed to be in order from 0,0 (a1)
+    // an ordered collection guaranteed to be in order from 0,0 (a1)
     // to 7,7 (h8.)
     // 
     // Pack the population as a 64-bit map depicting which squares
     // [0..63] contain pieces, hashed by ordinal number. Hence, a0 (0)
-    // is the LSB, and h8 (63) is the MSB.
+    // is the LSb, and h8 (63) is the MSb.
     //
     //        h       g       f       e       d       c       b       a
     // 8765432187654321876543218765432187654321876543218765432187654321
@@ -551,20 +548,26 @@ PositionPacked Board::pack() const {
     // 3 
     //
     // There can be max 32 pieces on the board - whose type information
-    // can be packed into four bit (nibble.)
+    // can be packed into four bits (nibble) and subsequently packed into
+    // two 64-bit values.
+    //
+    // The initial position is encoded:
+    // pop = 0xffff00000000ffff
+    // pieces
+    //   [0] 0x5432134566666666
+    //   [1] 0xeeeeeeeedcba9bcd
+    //
     uint8_t  bitcnt{0};    
     uint64_t pop{0};
+    uint8_t  pcs[32];
     for ( auto piece : _pm ) {
         uint8_t ord = piece.first.ordinal(); // 0..63
+        // set the bit of where the piece is sitting
         pop |= (uint64_t)(1ull << ord);
-        uint8_t pt  = piece.second->toByte();
-        int idx{bitcnt/2};                           // 0,0,1,1,2,2,...  
-        if ( bitcnt & 1 )                            // if odd set right, else left
-            ret.pieces.b[idx].r = pt;
-        else
-            ret.pieces.b[idx].l = pt;
-        bitcnt++;
+        pcs[bitcnt++] = piece.second->toByte();
     }
+    pack_array(pcs,    (uint8_t*)ret.pieces.w,   16);
+    pack_array(pcs+16, (uint8_t*)(ret.pieces.w+1), 16);
     ret.pop = pop;
     return ret;
 }
@@ -590,21 +593,21 @@ void Board::unpack(const PositionPacked& pp, Board& ret) {
     ret.set_full_move_count(pp.gi.f.full_move_cnt);
 
     uint64_t pop{pp.pop};
-    uint8_t  bitcnt{0};
-    uint64_t bit{1};
-    for ( uint8_t ord{0}; bit; ++ord, bit <<= 1ull ) {
-        if ( pop & bit ) {
-            int idx{bitcnt/2};                  // 0,0,1,1,2,2,...
-            uint8_t pt  = ( bitcnt & 1 )        // odd
-                        ? pp.pieces.b[idx].r
-                        : pp.pieces.b[idx].l;
-
+    auto     bitcnt{bitpop64(pop)};
+    uint64_t mask{0x1ull};
+    uint8_t  pcs[32];
+    unpack_array((uint8_t*) pp.pieces.w,    pcs,    8);
+    unpack_array((uint8_t*)(pp.pieces.w+1), pcs+16, 8);
+    uint8_t *ppcs{pcs};
+    for ( uint8_t ord{0}; bitcnt; ++ord) {
+        if ( pop & 1ull ) {
+            uint8_t pt = *ppcs++;
             auto pptr = Piece::fromByte(pt);
             _pm[ord] = pptr;
             pptr->set_board(&ret);
             pptr->set_square(Square(ord));
-            bitcnt++;
         }
+        pop >>= 1;
     }
 }
 

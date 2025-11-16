@@ -3,7 +3,7 @@
 
 class Square : public std::pair<byte,byte> {
 public:
-    Square();
+    Square() = default;
     Square( byte rank, byte file );
     Square( uint8_t ord);
     Square( const char *rnf );
@@ -30,6 +30,6 @@ public:
     byte ordinal() const;    
 
 public:
-    static Square UNBOUNDED;
+    static Square OUT_OF_BOUNDS;
 };
 
