@@ -28,9 +28,11 @@ This limits the size of the sub-search spaces to check a given position for coll
 Roots must be globally scrutinized, as roots created in one search space can occur in another search space. Consider:
 1. a3 d6
 2. d3 a6
+   
 Generates the same root position:
 1. d3 a6
 2. a3 d6
+   
 And are identical, and that the board position is the same, and the white is on-move. This can be segregated by piece count for each side. Both of the positions above have 16 black and 16 white pieces on board (1616), but if the piece count were 1615, then would not be comparable. So we can divide root positions into "hives" which can be searched based on piece count. Since neither side can have zero pieces, we only need consider ranges of 16..1, which are 15 possible counts per side, so 15^2 (225) hives are required. This might be simplified by using 30 pools - total piece count - but testing will prove this out. From above observations, this must
 be doubled to account for have-move sides.
 
@@ -78,34 +80,39 @@ p' --> move | p  --> p
 
 # Search Space Zero
 FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-The search space generated from the initial position:
-Maximum Moves in a position      :          34
-Minimum                          :          16
-Legal moves in this position     : 145'937'007
-Number of white root collisions  :   5'656'866
-Number of white domain collisions:  22'312'637
-Number of black root collisions  :   5'016'112
-Number of black domain collisions:  22'312'785
-Number of new roots              :  85'622'011
-Number of new positions          :   5'656'865
+
+| Stat | Metric |
+| ---- | -----: |
+| Maximum Moves in a position      |          34|
+| Minimum                          |          16|
+| Legal moves in this position     | 145'937'007|
+| Number of white root collisions  |   5'656'866|
+| Number of white domain collisions|  22'312'637|
+| Number of black root collisions  |   5'016'112|
+| Number of black domain collisions|  22'312'785|
+| Number of new roots              |  85'622'011|
+| Number of new positions          |   5'656'865|
 
 Running time:
-real    91m31.923s
-user    258m42.208s
-sys     188m4.779s
+* real    91m31.923s
+* user    258m42.208s
+* sys     188m4.779s
 
 # Search Space One
 FEN: "rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1"
-Maximum Moves in a position      :
-Minimum                          :
-Legal moves in this position     :
-Number of white root collisions  :
-Number of white domain collisions:
-Number of black root collisions  :
-Number of black domain collisions:
-Number of new roots              :
-Number of new positions          :
+
+* Maximum Moves in a position      :
+* Minimum                          :
+* Legal moves in this position     :
+* Number of white root collisions  :
+* Number of white domain collisions:
+* Number of black root collisions  :
+* Number of black domain collisions:
+* Number of new roots              :
+* Number of new positions          :
 
 Running time:
-
+* real
+* user
+* sys
 
