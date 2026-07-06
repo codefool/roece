@@ -4,12 +4,12 @@
 
 class Piece {
 private:
-    PieceType _t;
-    Color     _c;
-    char      _g;
-    Square    _s;
-    Board*    _b;
-    bool      _m;
+    PieceType typ;
+    Color     clr;
+    char      gly;
+    Square    sq;
+    Board*    brd;
+    bool      moved;
 
 protected:
     Piece();

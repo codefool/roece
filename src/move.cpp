@@ -8,8 +8,8 @@ MovePacked::MovePacked(const Move& m)
 : w{0}
 {
     b.ma  = (m.action & 0x0f);
-    b.org = m.org.ordinal();
-    b.dst = m.dst.ordinal();
+    b.org = m.sqOrg.ordinal();
+    b.dst = m.sqDst.ordinal();
 }
 
 // These move actions produce a new root position. In general,
@@ -63,7 +63,7 @@ std::ostream& operator<<(std::ostream& os, const Move& mv) {
     //     case MR_DOUBLE_CHECK: os << "MR_DOUBLE_CHECK"; break;  
     // }
 
-    os << ' ' << mv.org << "-->" << mv.dst;
+    os << ' ' << mv.sqOrg << "-->" << mv.sqDst;
 
     return os;
 }

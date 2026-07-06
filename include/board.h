@@ -4,9 +4,9 @@
 
 class Board {
 public:
-    PiecePtrMap _pm;
+    PiecePtrMap pm;
 private:
-    BoardState  _bs;
+    BoardState  bs;
 
 public:
     Board(const char *fen = EMPTY_BOARD);
@@ -23,7 +23,7 @@ public:
     bool has_castle_right( Color c, CastleSide s) const;
     void set_castle_right( byte bit, bool state );
     void set_castle_right( Color c, CastleSide s, bool state);
-    byte get_all_castle_rights() const { return _bs._castle_rights; }
+    inline byte get_all_castle_rights() const { return bs.byCastleRights; }
     std::string get_castle_rights_string() const;
     bool has_en_passant() const;
     Square get_en_passant() const;
@@ -43,6 +43,17 @@ public:
     MoveResult apply_move(const Move& move );
     void revert_move(const MoveResult& res);
 
+    // performs a linear search
+    //   side  - side doing the search
+    //   src   - starting place
+    //   dir   - direction to search
+    //   range - max number of squares to search
+    //
+    // This returns the following result:
+    //   SEEKRC_NONE           - nothing found
+    //   SEEKRC_FOUND_ENEMY    - found piece of opposite side
+    //   SEEKRC_FOUND_FRIENDLY - found piece of same side
+    //
     SeekResult seek( Color side, Square src, Dir dir, short range );
     PiecePtr at(Square squ) const;
     PiecePtr at(byte rank, byte file) const;

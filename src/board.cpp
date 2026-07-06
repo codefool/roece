@@ -6,13 +6,13 @@ MoveResult::MoveResult()
 {}
 MoveResult::MoveResult(PiecePtr s, PiecePtr t, Board* b) 
 : action{MV_NONE}
-, src{Piece::factory(s->type(), b, s->color())}
+, ppSrc{Piece::factory(s->type(), b, s->color())}
 , bs {b->get_board_state()}
 {
-    src->set_square(s->square());
+    ppSrc->set_square(s->square());
     if ( !t->is_empty() ) {
-        trg = Piece::factory(t->type(), b, t->color());
-        trg->set_square(t->square());
+        ppTrg = Piece::factory(t->type(), b, t->color());
+        ppTrg->set_square(t->square());
     }
 }
 
@@ -20,11 +20,11 @@ BoardState::BoardState()
 {}
 
 BoardState::BoardState(const BoardState& other)
-: _on_move        {other._on_move}
-, _castle_rights  {other._castle_rights}
-, _en_passant     {other._en_passant}
-, _half_move_clock{other._half_move_clock}
-, _full_move_cnt  {other._full_move_cnt}
+: clrOnMove      {other.clrOnMove}
+, byCastleRights {other.byCastleRights}
+, sqEnPassant    {other.sqEnPassant}
+, sHalfMoveClock {other.sHalfMoveClock}
+, sFullMoveCnt   {other.sFullMoveCnt}
 {}
 
 BoardState& BoardState::operator=(const BoardState& other) {
@@ -52,9 +52,9 @@ Board::Board(const PositionPacked& pp) {
 }
 
 Board::Board(const Board& other) 
-: _bs{other._bs}
+: bs{other.bs}
 {
-    for ( auto entry : other._pm ) {
+    for ( auto entry : other.pm ) {
         const Square squ( entry.first );
         PiecePtr     o_ptr( entry.second );
         PiecePtr     ptr( Piece::factory( o_ptr->type(), this, o_ptr->color() ));
@@ -64,27 +64,27 @@ Board::Board(const Board& other)
 }
 
 void Board::set_board_state(const BoardState& bs) {
-    _bs = bs;
+    this->bs = bs;
 }
 
 const BoardState& Board::get_board_state() const {
-    return _bs;
+    return bs;
 }
 
 MoveResult Board::apply_move(const Move& move) {
-    PiecePtr src = at(move.org);
-    PiecePtr trg = at(move.dst);
+    PiecePtr src = at(move.sqOrg);
+    PiecePtr trg = at(move.sqDst);
     MoveResult ret(src, trg, this);
     if ( src->is_empty() )
         return ret;
     ret.action = src->move(move);
-    ret.squSrc = src->square();
-    ret.squTrg = trg->square();
+    ret.sqSrc  = src->square();
+    ret.sqTrg  = trg->square();
     inc_half_move_clock();
     if (src->is_black())
         inc_full_move_count();
     // clear en passant if en passant was not updated this move
-    if ( get_en_passant() == ret.bs._en_passant )
+    if ( get_en_passant() == ret.bs.sqEnPassant )
         clear_en_passant();
     toggle_on_move();
     return ret;
@@ -99,39 +99,39 @@ MoveResult Board::apply_move(const Move& move) {
 // the second square is also adjusted by putting the piece back.
 void Board::revert_move(const MoveResult& res) {
     set_board_state(res.bs);
-    set(res.src->square(), res.src);
-    if ( res.trg != nullptr ) {
-        if ( res.trg->is_empty() )
-            remove(res.trg);
+    set(res.ppSrc->square(), res.ppSrc);
+    if ( res.ppTrg != nullptr ) {
+        if ( res.ppTrg->is_empty() )
+            remove(res.ppTrg);
         else
-            set(res.trg->square(), res.trg);
+            set(res.ppTrg->square(), res.ppTrg);
     }
     if ( res.action == MV_CASTLE_KINGSIDE || res.action == MV_CASTLE_QUEENSIDE ) {
-        if ( res.src->square() != res.squSrc )
-            remove( at(res.squSrc) );
-        if ( res.trg->square() != res.squTrg )
-            remove( at(res.squTrg) );
+        if ( res.ppSrc->square() != res.sqSrc )
+            remove( at(res.sqSrc) );
+        if ( res.ppTrg->square() != res.sqTrg )
+            remove( at(res.sqTrg) );
     }
 }
 
 Color Board::get_on_move() const {
-    return _bs._on_move;
+    return bs.clrOnMove;
 }
 
 void Board::set_on_move(Color c) {
-    _bs._on_move = c;
+    bs.clrOnMove = c;
 }
 
 void Board::toggle_on_move() {
-    set_on_move((_bs._on_move == WHITE)?BLACK:WHITE);
+    set_on_move((bs.clrOnMove == WHITE)?BLACK:WHITE);
 }
 
 bool Board::none_can_castle() const {
-    return (_bs._castle_rights & 0x0f) == 0;
+    return (bs.byCastleRights & 0x0f) == 0;
 }
 
 void Board::clear_castle_rights() {
-    _bs._castle_rights = 0;
+    bs.byCastleRights = 0;
 }
 
 // convert color and side attributes to an ordinal bit position
@@ -149,7 +149,7 @@ void Board::clear_castle_rights() {
 #define CASTLE_BIT(c, s) (byte)(1 << CASTLE_RIGHT_ORD(c, s) & 0x0f)
 
 bool Board::has_castle_right( byte bit ) const {
-    return (_bs._castle_rights & bit) != 0;
+    return (bs.byCastleRights & bit) != 0;
 }
 
 bool Board::has_castle_right( Color c, CastleSide s ) const {
@@ -171,9 +171,9 @@ std::string Board::get_castle_rights_string() const {
 
 void Board::set_castle_right( byte bit, bool state ) {
     if (state) {
-        _bs._castle_rights |= bit;
+        bs.byCastleRights |= bit;
     } else {
-        _bs._castle_rights &= ~bit;
+        bs.byCastleRights &= ~bit;
     }
 }
 
@@ -182,67 +182,70 @@ void Board::set_castle_right( Color c, CastleSide s, bool state ) {
 }
 
 bool Board::has_en_passant() const {
-    return _bs._en_passant != Square::OUT_OF_BOUNDS;
+    return bs.sqEnPassant != Square::OUT_OF_BOUNDS;
 }
 
 Square Board::get_en_passant() const {
-    return _bs._en_passant;
+    return bs.sqEnPassant;
 }
 
 void Board::clear_en_passant() {
-    _bs._en_passant = Square::OUT_OF_BOUNDS;
+    bs.sqEnPassant = Square::OUT_OF_BOUNDS;
 }
 
 void Board::set_en_passant( Square squ ) {
-    _bs._en_passant = squ.file();
+    bs.sqEnPassant = squ.file();
 }
 
 short Board::get_half_move_clock() const {
-    return _bs._half_move_clock;
+    return bs.sHalfMoveClock;
 }
 
 void Board::set_half_move_clock( short val ) {
-    _bs._half_move_clock = val;
+    bs.sHalfMoveClock = val;
 }
 
 void Board::clear_half_move_clock() {
-    _bs._half_move_clock = 0;
+    bs.sHalfMoveClock = 0;
 }
 
 void Board::inc_half_move_clock() {
-    ++_bs._half_move_clock;
+    ++bs.sHalfMoveClock;
 }
 
 short Board::get_full_move_count() const {
-    return _bs._full_move_cnt;
+    return bs.sFullMoveCnt;
 }
 
 void Board::set_full_move_count( short val ) {
-    _bs._full_move_cnt = val;
+    bs.sFullMoveCnt = val;
 }
 
 void Board::clear_full_move_count() {
-    _bs._full_move_cnt = 0;
+    bs.sFullMoveCnt = 0;
 }
 
 void Board::inc_full_move_count() {
-    _bs._full_move_cnt++;
+    bs.sFullMoveCnt++;
 }
 
 SeekResult Board::seek( Color side, Square src, Dir dir, short range ) {
     SeekResult ret;
     Square here = src;
+    Offset off = offs[dir];
+    // walk in the direction indicated until we find another piece,
+    // run out of spaces, or walk off the board
     while ( range-- ) {
-        here += offs[ dir ];
+        here += off;
         if ( !here.in_bounds() )
             break;
         ret.path.push_back(here);
         PiecePtr occ = at(here);
         if ( ! occ->is_empty() ) {
-            ret.occupant = occ;
-            ret.rc = (occ->color() == side) 
-                   ? SEEKRC_FOUND_FRIENDLY
-                   : SEEKRC_FOUND_ENEMY;
+            ret.ppOcc = occ;
+            ret.rc    = (occ->color() == side) 
+                      ? SEEKRC_FOUND_FRIENDLY
+                      : SEEKRC_FOUND_ENEMY;
             break;
         }
     }
@@ -250,8 +253,8 @@ SeekResult Board::seek( Color side, Square src, Dir dir, short range ) {
 }
 
 PiecePtr Board::at(Square squ) const {
-    auto itr = _pm.find(squ);
-    if ( itr == _pm.end() )
+    auto itr = pm.find(squ);
+    if ( itr == pm.end() )
         return Piece::EMPTY;
     return itr->second;
 }
@@ -270,14 +273,14 @@ void Board::set( Square squ, PiecePtr ptr ) {
     // remove the piece from the board
     remove( ptr );
     // and put it back where it belongs
-    _pm[squ] = ptr;
+    pm[squ] = ptr;
     // and record new location in the piece
     ptr->set_square(squ);
 }
 
 void Board::remove(PiecePtr ptr) {
     if ( !ptr->is_empty() && !ptr->square().is_unbounded() )
-        _pm.erase(ptr->square());
+        pm.erase(ptr->square());
 }
 
 // Initialize a board from Forsyth-Edwards (FEN) notation string.
@@ -293,7 +296,7 @@ void Board::remove(PiecePtr ptr) {
 // 
 void Board::from_fen(const std::string& fen)
 {
-    _pm.clear();
+    pm.clear();
 
     std::vector<std::string> toks = split(fen, " ");
     // Field 1 - Piece Placement Data
@@ -495,14 +498,12 @@ std::string Board::diagram() {
             ss << pt->glyph() << ' ';
         }
         switch( r ) {
-            case R8: ss << " ep:" << _bs._en_passant;            break;
+            case R8: ss << " ep:" << bs.sqEnPassant;             break;
             case R7: ss << " cr:" << get_castle_rights_string(); break;
-            case R6: ss << " om:" << ((_bs._on_move)?"b":"w");   break;
-            case R5: ss << " hm:" << _bs._half_move_clock;       break;
-            case R4: ss << " fm:" << _bs._full_move_cnt;         break;
-            case R3:
-            case R2:
-            case R1:
+            case R6: ss << " om:" << ((bs.clrOnMove)?"b":"w");   break;
+            case R5: ss << " hm:" << bs.sHalfMoveClock;          break;
+            case R4: ss << " fm:" << bs.sFullMoveCnt;            break;
+            default:
                 break;
         };
         ss << std::endl;
@@ -512,7 +513,7 @@ std::string Board::diagram() {
 
 void Board::get_moves(MoveList& moves) {
     moves.clear();
-    for ( auto p : _pm ) {
+    for ( auto p : pm ) {
         if ( p.second->color() == get_on_move() )
             p.second->get_moves( moves );
     }
@@ -527,7 +528,7 @@ PositionPacked Board::pack() const {
     ret.gi.f.castle_right_black_kingside  = has_castle_right(BLACK, KINGSIDE );
     ret.gi.f.castle_right_black_queenside = has_castle_right(BLACK, QUEENSIDE);
     ret.gi.f.on_move         = get_on_move();
-    ret.gi.f.piece_cnt       = _pm.size();
+    ret.gi.f.piece_cnt       = pm.size();
     ret.gi.f.half_move_clock = get_half_move_clock();
     ret.gi.f.full_move_cnt   = get_full_move_count();
     ret.gi.f.en_passant_ord  = has_en_passant()
@@ -560,13 +561,13 @@ PositionPacked Board::pack() const {
     uint8_t  bitcnt{0};    
     uint64_t pop{0};
     uint8_t  pcs[32];
-    for ( auto piece : _pm ) {
+    for ( auto piece : pm ) {
         uint8_t ord = piece.first.ordinal(); // 0..63
         // set the bit of where the piece is sitting
         pop |= (uint64_t)(1ull << ord);
         pcs[bitcnt++] = piece.second->toByte();
     }
-    pack_array(pcs,    (uint8_t*)ret.pieces.w,   16);
+    pack_array(pcs,    (uint8_t*)ret.pieces.w,     16);
     pack_array(pcs+16, (uint8_t*)(ret.pieces.w+1), 16);
     ret.pop = pop;
     return ret;
@@ -577,7 +578,7 @@ void Board::init(const PositionPacked& pp) {
 }
 
 void Board::unpack(const PositionPacked& pp, Board& ret) {
-    ret._pm.clear();
+    ret.pm.clear();
     ret.set_castle_right(WHITE, KINGSIDE,  pp.gi.f.castle_right_white_kingside );
     ret.set_castle_right(WHITE, QUEENSIDE, pp.gi.f.castle_right_white_queenside);
     ret.set_castle_right(BLACK, KINGSIDE,  pp.gi.f.castle_right_black_kingside );
@@ -603,7 +604,7 @@ void Board::unpack(const PositionPacked& pp, Board& ret) {
         if ( pop & 1ull ) {
             uint8_t pt = *ppcs++;
             auto pptr = Piece::fromByte(pt);
-            _pm[ord] = pptr;
+            pm[ord] = pptr;
             pptr->set_board(&ret);
             pptr->set_square(Square(ord));
         }

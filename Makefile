@@ -16,7 +16,7 @@ OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 HDR := $(wildcard $(INC_DIR)/*.h)
 
 CC := g++
-CFLAGS := -g -std=c++2a -I$(INC_DIR) -I/usr/local/libcf/include
+CFLAGS := -g -std=c++26 -I$(INC_DIR) -I/usr/local/libcf/include
 ARC := ar
 AFLAGS := rvs
 

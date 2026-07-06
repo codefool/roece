@@ -2,10 +2,10 @@
 #include "roece.h"
 
 Piece::Piece()
-: _t(PT_NONE)
-, _b(nullptr)
-, _c(DRAB)
-, _s(Square::OUT_OF_BOUNDS)
+: typ{PT_NONE}
+, brd{nullptr}
+, clr{DRAB}
+, sq{Square::OUT_OF_BOUNDS}
 {}
 King::King() : Piece()
 {}
@@ -21,41 +21,41 @@ Pawn::Pawn() : Piece()
 {}
 
 Piece::Piece( PieceType pt, Board* b, Color c )
-: _t(pt)
-, _b(b)
-, _c(c)
-, _s(Square::OUT_OF_BOUNDS)
+: typ(pt)
+, brd(b)
+, clr(c)
+, sq(Square::OUT_OF_BOUNDS)
 {
     set_glyph();
 }
 
 Board& Piece::board() const { 
-    assert(_b != nullptr);
-    return *_b; 
+    assert(brd != nullptr);
+    return *brd; 
 }
 
-const PieceType Piece::type()   const { return _t; }
-const Color     Piece::color()  const { return _c; }
-const Square    Piece::square() const { return _s; }
-const char      Piece::glyph()  const { return _g; }
-const byte      Piece::range()  const { return ranges[_t]; }
+const PieceType Piece::type()   const { return typ; }
+const Color     Piece::color()  const { return clr; }
+const Square    Piece::square() const { return sq; }
+const char      Piece::glyph()  const { return gly; }
+const byte      Piece::range()  const { return ranges[typ]; }
 const uint8_t   Piece::toByte() const {
-	uint8_t r = static_cast<uint8_t>(_t);
-	if (_c)
+	uint8_t r = static_cast<uint8_t>(typ);
+	if (clr)
 		r |= BLACK_MASK;
 	return r;
 }
-const bool Piece::has_moved() const { return _m; }
-const bool Piece::is_type(PieceType pt) const { return _t == pt; }
+const bool Piece::has_moved() const { return moved; }
+const bool Piece::is_type(PieceType pt) const { return typ == pt; }
 const bool Piece::is_empty()  const { return is_type(PT_NONE); }
 const bool Piece::is_knight() const { return is_type(PT_KNIGHT); }
-const bool Piece::is_white()  const { return !_c; }
-const bool Piece::is_black()  const { return  _c; }
+const bool Piece::is_white()  const { return !clr; }
+const bool Piece::is_black()  const { return  clr; }
 
-inline const bool Piece::is_enemy( PiecePtr ptr ) const {
+const bool Piece::is_enemy( PiecePtr ptr ) const {
     return color() != ptr->color();
 }
-inline const bool Piece::is_friend( PiecePtr ptr ) const {
+const bool Piece::is_friend( PiecePtr ptr ) const {
     return ! is_enemy( ptr );
 }
 
@@ -64,25 +64,25 @@ PiecePtr Piece::ptr() {
 }
 
 void Piece::set_type(PieceType pt) {
-    _t = pt;
+    typ = pt;
 }
 
 void Piece::set_square(Square squ) {
-    _s = squ;
+    sq = squ;
 }
 
 void Piece::set_glyph() {
-    _g = glyphs[type()];
+    gly = glyphs[type()];
     if (is_black())
-        _g = std::tolower(_g);
+        gly = std::tolower(gly);
 }
 
-void Piece::set_board(Board* brd) {
-    _b = brd;
+void Piece::set_board(Board* b) {
+    brd = b;
 }
 
 void Piece::set_moved(bool state) {
-    _m = state;
+    moved = state;
 }
 
 std::ostream& operator<<(std::ostream& os, const Piece& p) {
@@ -98,40 +98,38 @@ const DirList& Piece::get_dirs() const { return none_dirs; }
 // 2. Any special handling (castling, en passant, etc) have been
 //    taken care of by sub-classes.
 MoveAction Piece::move( const Move move ) {
-    board().set(move.dst, ptr());
+    board().set(move.sqDst, ptr());
     set_moved();
     return move.action; 
 }
 
 PieceList Piece::get_attackers(const PiecePtr& trg) const {
     PieceList enemies;
-    SeekResult sr;
-
+    
     if ( trg->is_empty() )
-        return enemies;
+    return enemies;
+    
+    SeekResult sr;
+    Square     sqTrg{ trg->square() };
 
-    // using trg as a starting point, trace all rays axes, diag, and knight to see if an opposing
-    // piece of the appropriate type is encountered.
-    // if we found an enemy in line-of-sight, but need to counter-check that the enemy can actually
-    // attack us. (Encountered sitation where an opposing King on its home square was a valid enemy 
-    // for the King on its home square.)
+    // using trg as a starting point, trace all rays axes, diag, and knights 
+    // to see if an opposing piece of the appropriate type is encountered.
+    // if we found an enemy in line-of-sight, but need to counter-check that 
+    // the enemy can actually attack us. (Encountered sitation where an 
+    // opposing King on its home square was a valid enemy for the King on its 
+    // home square.)
     for ( Dir dir : omni_dirs ) {
         sr = board().seek( color(), square(), dir, 7 );
-        if ( sr.rc == SEEKRC_FOUND_ENEMY && sr.occupant->can_attack(trg->square())) {
-            enemies.push_back( sr.occupant );
+        if ( sr.rc == SEEKRC_FOUND_ENEMY && sr.ppOcc->can_attack( sqTrg ) ) {
+            enemies.push_back( sr.ppOcc );
         }
     }
-    for ( Dir dir : knight_dirs ) {
-        PiecePtr enemy = board().at( trg->square() + offs[ dir ] );
-        if ( enemy->is_knight() && is_enemy( enemy ) )
-            enemies.push_back( enemy );
-    }
 
-    for( auto itr = enemies.begin(); itr != enemies.end(); ) {
-        if ( (*itr)->can_attack(trg->square()) )
-            ++itr;
-        else
-            itr = enemies.erase(itr);
+    // check for knights
+    for ( Dir dir : knight_dirs ) {
+        PiecePtr ppOcc = board().at( trg->square() + offs[ dir ] );
+        if ( ppOcc->is_knight() && is_enemy( ppOcc ) && ppOcc->can_attack( sqTrg ) )
+            enemies.push_back( ppOcc );
     }
 
     return enemies;
@@ -156,21 +154,21 @@ bool Piece::can_omni_attack( Square dst ) const {
 }
 
 void Piece::get_dirs_moves( const DirList& dirs, MoveList& moves ) const {
-    SeekResult res;
-    PiecePtr ptr = board().at( square() );
-    bool isPawn = ptr->type() == PT_PAWN;
+    PiecePtr   ptr = board().at( square() );
+    bool       isPawn = ptr->type() == PT_PAWN;
     for ( Dir dir : dirs ) {
-        res = board().seek( color(), square(), dir, range() );
-        short sz( res.path.size() );
-        for ( short idx(0); idx < sz; ++idx ) {
-            MoveAction ma  = (isPawn) ? MV_MOVE_PAWN : MV_MOVE;
-            Square     squ = res.path[idx];
-            if ( idx == sz - 1 && res.occupant != nullptr && !res.occupant->is_empty() ) {
-                // the last square of the walk is not empty,
-                // if it's friendly we're done. If not, capture it.
-                if ( res.rc == SEEKRC_FOUND_FRIENDLY )
-                    break;
-                // mark last move as capture
+        SeekResult res = board().seek( color(), square(), dir, range() );
+        // catalog each square than can be moved into. If a square is
+        // occupied by a friend, then stop. If an enemy, then capture it.
+        MoveAction ma = (isPawn) ? MV_MOVE_PAWN : MV_MOVE;
+        for( auto squ : res.path ) {
+            if ( squ == res.path.back() && res.ppOcc != nullptr ) {
+                // on the last square, if it's occupied:
+                // - by friend, we're done (don't push the move)
+                // - by enemy, capture it (push a capture move)
+                if ( res.rc == SEEKRC_FOUND_FRIENDLY ) {
+                    break; // out of inner loop
+                }
                 ma = MV_CAPTURE;
             }
             moves.push_back( Move( ma, square(), squ ) );
@@ -250,7 +248,7 @@ void King::get_moves( MoveList& moves ) const {
             File       rook_file;     // where the rook should be
             MoveAction ma;            // resulting move action
             File       clear_file[3]; // files that cannot be under attack
-        } castle_info[2] = {
+        } const castle_info[2] = {
             {LFT, 3, Fh, MV_CASTLE_KINGSIDE , {Fe,Ff,Fg}},
             {RGT, 4, Fa, MV_CASTLE_QUEENSIDE, {Fc,Fd,Fe}},
         };
@@ -271,7 +269,7 @@ void King::get_moves( MoveList& moves ) const {
                 continue;
 
             auto res = board().seek(rook->color(), rook->square(), ci.d, ci.r);
-            if ( res.rc != SEEKRC_FOUND_FRIENDLY || !res.occupant->is_type(PT_KING))
+            if ( res.rc != SEEKRC_FOUND_FRIENDLY || !res.ppOcc->is_type(PT_KING))
                 continue;
                 
             // 8A4a king cannot be in check, and none of the spaces the king must pass
@@ -294,7 +292,7 @@ bool King::can_attack( Square dst ) const {
     return can_omni_attack(dst);
 }
 MoveAction King::move(const Move move) {
-    PiecePtr trg = board().at(move.dst);
+    PiecePtr trg = board().at(move.sqDst);
     Color    cc  = (Color)is_black(); //WHITE=0,BLACK=1
     if (move.action == MV_CASTLE_KINGSIDE || move.action == MV_CASTLE_QUEENSIDE ) {
         CastleSide cs = (move.action == MV_CASTLE_KINGSIDE) 
@@ -456,34 +454,31 @@ void Pawn::get_moves( MoveList& moves ) const {
 }
 
 bool Pawn::can_attack( Square dst ) const {
-    bool ret(false);
-    byte dr( square().rank_delta( dst ) );
-    byte df( square().file_distance( dst ) );
+    short dr( square().rank_delta   ( dst ) );  // delta rank
+    short df( square().file_distance( dst ) );  // delta file
     // TODO: if dst == board().en_passant()
     if ( is_white() ) {
-        // white pawn attack up, so dr must be -1 and df is -/+1
-        ret = dr == -1 && df == 1;
-    } else {
-        // black pawn attack down, so dr must be 1 and df is -/+1
-        ret = dr == 1 && df == 1;
-    }
-    return ret;
+        // white pawn attack up, so dr must be -1 and df is 1
+        return dr == -1 && df == 1;
+    } 
+    // black pawn attack down, so dr must be 1 and df is 1
+    return dr == 1 && df == 1;
 }
 
 MoveAction Pawn::move(const Move move) {
     if ( move.action == MV_EN_PASSANT ) {
         // 8F5 Capturing en passant
-        PiecePtr capt = board().at(move.org.rank(), move.dst.file());
-        if ( capt->is_empty() )
+        PiecePtr trg = board().at(move.sqOrg.rank(), move.sqDst.file());
+        if ( trg->is_empty() )
             return MV_NONE;
-        board().remove(capt);
+        board().remove(trg);
         return Piece::move(move);
     } else if ( move.action == MV_MOVE_PAWN ) {
         // 8F2 pawn can move 1 or 2 spaces.
         // if 2 spaces set en passant square
         Piece::move(move);
-        if ( move.org.rank_distance(move.dst) == 2 )
-            board().set_en_passant(move.dst);
+        if ( move.sqOrg.rank_distance(move.sqDst) == 2 )
+            board().set_en_passant(move.sqDst);
     } else {
         // 8F6 Pawn Promotion
         Piece::move(move);

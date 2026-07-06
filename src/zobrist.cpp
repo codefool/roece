@@ -1,7 +1,20 @@
+// zobrist.cpp
+//
+// Implementation of Zobrist Hashing technique described in:
+//
+// "A New Hashing Method with Application For Game Playing"
+// Albert L. Zobrist
+// The University of Wisconsin
+// Madison, WI
+// Technical Report #88
+// April 1970
+// https://research.cs.wisc.edu/techreports/1970/TR88.pdf (retr. 11.14.2024)
+//
+
 #include "roece.h"
 
-// A list of random 64-bit numbers with a hamming distance of at least 1
-// sides x piece types x squares
+// A list of 64-bit random numbers with a hamming distance of at least 1
+// sides 2 piece types x 64 squares
 const std::uint64_t pieces_rn[2][6][64] = {
     // white king
     {
