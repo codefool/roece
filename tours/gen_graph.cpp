@@ -45,7 +45,10 @@ const char *dirName[DIR_CNT] = {
 struct Node {
     short rank;
     short file;
-    std::map<Direction, Node*> n;
+    Node *n[DIR_CNT];
+    Node() {
+        std::memset(n, 0x00, sizeof(n));
+    }
     friend std::ostream& operator <<(std::ostream& os, Node *n) {
         os << '[' << n->rank << ',' << n->file << ']';
         return os;
@@ -98,8 +101,11 @@ public:
                 Node &n = squares[rank][file];
 
                 std::cout << &n << ':' << std::endl;
-                for ( auto k : n.n ) {
-                    std::cout << ' ' << dirName[k.first] << ' ' << k.second << std::endl;
+                for ( auto d = 0; d < DIR_CNT; ++d ) {
+                    Node *np = n.n[d];
+                    if ( np != nullptr ) {
+                        std::cout << ' ' << dirName[d] << ' ' << np << std::endl;
+                    }
                 }
             }
         }
@@ -111,7 +117,6 @@ int main() {
     b.dump();
     return 0;
 }
-
 
 
 
