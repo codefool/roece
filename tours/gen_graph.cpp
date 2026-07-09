@@ -76,15 +76,15 @@ public:
                 setDir(node, UP,  rank +1, file +0);
                 setDir(node, RGT, rank +0, file +1);
                 setDir(node, DN,  rank -1, file +0);
-                setDir(node, LFT, rank -1, file -1);
+                setDir(node, LFT, rank +0, file -1);
                 // diagonal
                 setDir(node, UPR, rank +1, file +1);
                 setDir(node, DNR, rank -1, file +1);
                 setDir(node, DNL, rank -1, file -1);
                 setDir(node, UPL, rank +1, file -1);
                 // knights
-                setDir(node, KUL, rank +2, file +1);
-                setDir(node, KUR, rank +2, file -1);
+                setDir(node, KUL, rank +2, file -1);
+                setDir(node, KUR, rank +2, file +1);
                 setDir(node, KRU, rank +1, file +2);
                 setDir(node, KRD, rank -1, file +2);
                 setDir(node, KDR, rank -2, file +1);
