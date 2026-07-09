@@ -139,13 +139,13 @@ What if we went all-out and just build a graph with nodes akin to:
 class Node {
    Position pos;
    PiecePtr occupant; 
-   std::map<DIR,Node&> neighbors;
+   std::map<DIR,Node*> neighbors;
 
    Node& setDir( Direction d, short roffset, short foffset ) {
       auto rank = pos.rank + roffset;
       auto file = pos.file + foffset;
       if 0 < rank && rank < 8 && 0 < file && file < 8 {
-          neighbors[d] = board[rank][file]
+          neighbors[d] = &board[rank][file]
       }
       return *this;
    }
@@ -154,17 +154,18 @@ class Node {
 ```
 
 So for each node (square) a move in a given direction gives the next square in that direction. If not move is possible, the direction does not exist in the map.
+We need to keep the board as a 8x8 array so that any node can be indexed when needed.
 
 ```
 Node[8][8] board;
 for rank = 1; rank < 8; ++rank {
    for file = 1; file < 8; ++file {
-      Node& node{board[rank][file]);
+      Node& node{board[rank][file]};
       // axial moves
-      node.setDir(DU,  1, 0)
-          .setDir(DR,  0, 1)
-          .setDir(DD, -1, 0)
-          .setDir(DL, -1, 0)
+      node.setDir(DU,   1,  0)
+          .setDir(DR,   0,  1)
+          .setDir(DD,  -1,  0)
+          .setDir(DL,  -1, -1)
       // diagonal
           .setDir(DUR,  1,  1)
           .setDir(DLR, -1,  1)
@@ -184,7 +185,7 @@ for rank = 1; rank < 8; ++rank {
 ```
 This can be easily done at runtime. This solves all problems, no math is required, and the board becomes a self-contained object that is easily to encode/decode.
 
-
+Worst case (unobtainable) is 64 * 16 edges (1024.) Not unreasonable.
 
 
 
