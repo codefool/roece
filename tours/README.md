@@ -137,8 +137,6 @@ What if we went all-out and just build a graph with nodes akin to:
 
 ```
 class Node {
-   Position pos;
-   PiecePtr occupant; 
    std::map<DIR,Node*> neighbors;
 
    Node& setDir( Direction d, short roffset, short foffset ) {
@@ -187,7 +185,9 @@ This can be easily done at runtime. This solves all problems, no math is require
 
 Worst case (unobtainable) is 64 * 16 edges (1024.) Not unreasonable.
 
-
+Once the graph is built it is used as a reference only - no additional information is stored in the graph. This is to prevent having to duplicate the graph when copying positions and in other situations.
+Ths graph is merely a static reference that can be used to easily determine the relationship between pieces, and movement possiblities for pieces. The graph, once established, is static and cannot be 
+changed. I wonder how to enforce this?
 
 
 
