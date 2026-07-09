@@ -172,22 +172,20 @@ for rank = 1; rank < 8; ++rank {
           .setDir(DLL, -1, -1)
           .setDir(DUL,  1, -1)
       // knights
-          .setDir(KUL,  2, -1)
-          .setDir(KUR,  2,  1)
-          .setDir(KRU,  2,  1)
-          .setDir(KRD,  2, -1)
-          .setDir(KDR,  1, -2)
-          .setDir(KDL, -1,  2)
-          .setDir(KLD, -2, -1)
-          .setDir(KRD, -2,  1)
+          .setDir(KUL,  2,  1)
+          .setDir(KUR,  2, -1)
+          .setDir(KRU,  1,  2)
+          .setDir(KRD, -1,  2)
+          .setDir(KDR, -2,  1)
+          .setDir(KDL, -2, -1)
+          .setDir(KLD, -1, -2)
+          .setDir(KLU,  1, -2)
    }
 }
 ```
 This can be easily done at runtime. This solves all problems, no math is required, and the board becomes a self-contained object that is easily to encode/decode.
 
 Worst case (unobtainable) is 64 * 16 edges (1024.) Not unreasonable.
-
-
 
 
 
