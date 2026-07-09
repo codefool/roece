@@ -131,3 +131,64 @@ solution and then see if optimizations can be made.
 Knights are Different
 
 
+A GRAPH?!
+
+What if we went all-out and just build a graph with nodes akin to:
+
+```
+class Node {
+   Position pos;
+   PiecePtr occupant; 
+   std::map<DIR,Node&> neighbors;
+
+   Node& setDir( Direction d, short roffset, short foffset ) {
+      auto rank = pos.rank + roffset;
+      auto file = pos.file + foffset;
+      if 0 < rank && rank < 8 && 0 < file && file < 8 {
+          neighbors[d] = board[rank][file]
+      }
+      return *this;
+   }
+
+}
+```
+
+So for each node (square) a move in a given direction gives the next square in that direction. If not move is possible, the direction does not exist in the map.
+
+```
+Node[8][8] board;
+for rank = 1; rank < 8; ++rank {
+   for file = 1; file < 8; ++file {
+      Node& node{board[rank][file]);
+      // axial moves
+      node.setDir(DU,  1, 0)
+          .setDir(DR,  0, 1)
+          .setDir(DD, -1, 0)
+          .setDir(DL, -1, 0)
+      // diagonal
+          .setDir(DUR,  1,  1)
+          .setDir(DLR, -1,  1)
+          .setDir(DLL, -1, -1)
+          .setDir(DUL,  1, -1)
+      // knights
+          .setDir(KUL,  2, -1)
+          .setDir(KUR,  2,  1)
+          .setDir(KRU,  2,  1)
+          .setDir(KRD,  2, -1)
+          .setDir(KDR,  1, -2)
+          .setDir(KDL, -1,  2)
+          .setDir(KLD, -2, -1)
+          .setDir(KRD, -2,  1)
+   }
+}
+```
+This can be easily done at runtime. This solves all problems, no math is required, and the board becomes a self-contained object that is easily to encode/decode.
+
+
+
+
+
+
+
+
+
